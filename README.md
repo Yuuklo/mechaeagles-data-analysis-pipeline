@@ -2,7 +2,7 @@
 by Calvin Wang | @Yuuklo | wangcalv@bc.edu
 
 **Description**
-> Browser pipeline that generates plots and PDF reports based on drag-and-drop CSV upload data. Made for MechaEagles at Boston College.
+> Browser pipeline that generates plots and engineering reports from drag-and-drop CSV data. Made for MechaEagles at Boston College.
 
 **Contents**
 
