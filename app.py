@@ -1,367 +1,716 @@
 import pandas as pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors as rl_colors
+from reportlab.lib.units import inch
+from reportlab.platypus import HRFlowable, KeepTogether
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+import datetime
+
+st.set_page_config(
+    page_title="MechaEagles | Data Pipeline",
+    page_icon="🦅",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# Global CSS
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap');
+
+/* Base */
+html, body, [class*="css"] {
+    font-family: 'Exo 2', sans-serif;
+    background-color: #0a0e17;
+    color: #c8d8e8;
+}
+
+/* Scanline overlay */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,200,0.015) 2px,
+        rgba(0,255,200,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Remove Streamlit's default top gap so header sits flush */
+.main .block-container {
+    padding: 0 2rem 3rem !important;
+    max-width: 1400px;
+    background-color: #0a0e17;
+}
+#root > div:first-child {
+    margin-top: 0 !important;
+}
+header[data-testid="stHeader"] {
+    background: transparent;
+    height: 0;
+}
+
+/* ── Header ── */
+.me-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 2rem 2rem 1.4rem;
+    border-bottom: 1px solid #1a3a4a;
+    margin-bottom: 1.8rem;
+    background: linear-gradient(90deg, rgba(0,255,180,0.06) 0%, transparent 60%);
+}
+.me-logo-mark {
+    width: 64px; height: 64px;
+    background: #00ffb4;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.me-logo-inner {
+    width: 38px; height: 38px;
+    background: #0a0e17;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.me-brand { line-height: 1.15; }
+.me-brand-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #00ffb4;
+    text-transform: uppercase;
+}
+.me-brand-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: #4a7a8a;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+/* ── Section headers ── */
+.me-section {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #00ffb4;
+    border-left: 3px solid #00ffb4;
+    padding-left: 10px;
+    margin: 1.6rem 0 0.8rem;
+}
+
+/* ── Upload zone ── */
+.me-upload-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: #4a9a8a;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+/* ── CVT stat cards ── */
+.cvt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+.cvt-card {
+    background: #0f1a24;
+    border: 1px solid #1a3a4a;
+    border-left: 3px solid #00ffb4;
+    padding: 14px 18px;
+    border-radius: 4px;
+}
+.cvt-card-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: #4a7a8a;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.cvt-card-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00ffb4;
+}
+.cvt-card-unit {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: #4a9a8a;
+    margin-left: 4px;
+}
+.cvt-card.run2 { border-left-color: #ff6b35; }
+.cvt-card.run2 .cvt-card-value { color: #ff6b35; }
+
+/* ── Anomaly table ── */
+div[data-testid="stDataFrame"] {
+    border: 1px solid #1a3a4a !important;
+    border-radius: 4px;
+    background: #0f1a24;
+}
+
+/* ── Plotly chart containers ── */
+div[data-testid="stPlotlyChart"] {
+    border: 1px solid #1a3a4a;
+    border-radius: 4px;
+    background: #0d1520;
+    padding: 4px;
+}
+
+/* ── Download button ── */
+div[data-testid="stDownloadButton"] > button,
+div[data-testid="stButton"] > button {
+    font-family: 'Rajdhani', sans-serif !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    background: transparent !important;
+    color: #00ffb4 !important;
+    border: 1px solid #00ffb4 !important;
+    border-radius: 3px !important;
+    padding: 0.5rem 1.8rem !important;
+    transition: all 0.2s !important;
+}
+div[data-testid="stDownloadButton"] > button:hover,
+div[data-testid="stButton"] > button:hover {
+    background: rgba(0,255,180,0.08) !important;
+    box-shadow: 0 0 16px rgba(0,255,180,0.2) !important;
+}
+
+/* ── Radio ── */
+div[data-testid="stRadio"] label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: #4a9a8a;
+}
+
+/* Streamlit default element overrides */
+h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
+.stAlert { border-radius: 4px; }
+</style>
+
+<div class="me-header">
+  <div class="me-logo-mark"><div class="me-logo-inner"></div></div>
+  <div class="me-brand">
+    <div class="me-brand-name">MechaEagles</div>
+    <div class="me-brand-sub">Post-Run Data Analysis Pipeline &nbsp;·&nbsp; v1.0</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Page theme config
+PLOT_LAYOUT = dict(
+    paper_bgcolor="#0d1520",
+    plot_bgcolor="#0d1520",
+    font=dict(family="Exo 2, sans-serif", color="#8aaabb", size=11),
+    xaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
+    yaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
+    legend=dict(
+        bgcolor="rgba(10,14,23,0.85)",
+        bordercolor="#1a3a4a",
+        borderwidth=1,
+        font=dict(size=11),
+        orientation="h",
+        yanchor="top", y=-0.18,
+        xanchor="left", x=0,
+    ),
+    margin=dict(l=50, r=20, t=40, b=80),
+    title_font=dict(family="Rajdhani, sans-serif", size=14, color="#c8d8e8"),
+)
+RUN1_COLOR = "#00ffb4"
+RUN2_COLOR = "#ff6b35"
 
 COLUMN_ALIASES = {
-    "time_s": ["timestamp_ms", "time", "timestamp", "t", "seconds", "sec", "time_s"],
-    "speed": ["speed", "vehicle_speed", "wheel_speed", "mph", "kph", "speed_mph", "speed_kph"],
-    "rpm": ["rpm", "engine_rpm", "motor_rpm"],
-    "temp": ["temp", "temperature", "cvt_temp", "engine_temp", "temp_c", "temp_f"],
-    "gx": ["accel_x_g", "gx", "g_x", "accel_x", "ax", "gforce_x"],
-    "gy": ["accel_y_g", "gy", "g_y", "accel_y", "ay", "gforce_y"],
-    "voltage": ["voltage_v", "voltage", "vbat", "battery_voltage", "vbatt", "batt_v"],
+    "time_s":   ["timestamp_ms", "time", "timestamp", "t", "seconds", "sec", "time_s"],
+    "speed":    ["speed", "vehicle_speed", "wheel_speed", "mph", "kph", "speed_mph", "speed_kph"],
+    "rpm":      ["rpm", "engine_rpm", "motor_rpm"],
+    "temp":     ["temp", "temperature", "cvt_temp", "engine_temp", "temp_c", "temp_f"],
+    "gx":       ["accel_x_g", "gx", "g_x", "accel_x", "ax", "gforce_x"],
+    "gy":       ["accel_y_g", "gy", "g_y", "accel_y", "ay", "gforce_y"],
+    "voltage":  ["voltage_v", "voltage", "vbat", "battery_voltage", "vbatt", "batt_v"],
 }
 
 DTYPE_MAP = {
-        "time_s":   float,
-        "speed":    float,
-        "rpm":      float,
-        "temp":     float,
-        "gx":       float,
-        "gy":       float,
-        "voltage":  float,
-    }
+    "time_s": float, "speed": float, "rpm": float,
+    "temp": float, "gx": float, "gy": float, "voltage": float,
+}
 
 
 def normalize_columns(df):
-    """
-    Checks each column name and changes it to a set alias
-    """
     rename_map = {}
     actual_cols = [c.lower().strip() for c in df.columns]
-
     for canonical, aliases in COLUMN_ALIASES.items():
         for alias in aliases:
             if alias.lower() in actual_cols:
                 original = df.columns[actual_cols.index(alias.lower())]
                 rename_map[original] = canonical
                 break
-
     missing = [c for c in COLUMN_ALIASES if c not in rename_map.values()]
     if missing:
-        raise ValueError(f"Could not find columns for following: {missing}")
-
-    return df.rename(columns = rename_map)
+        raise ValueError(f"Could not find columns: {missing}")
+    return df.rename(columns=rename_map)
 
 
 def enforce_dtypes(df):
-    """
-    Sets all column dtypes to float64
-    """
     for col, dtype in DTYPE_MAP.items():
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[col] = df[col].astype(dtype)
+            df[col] = pd.to_numeric(df[col], errors='coerce').astype(dtype)
     return df
 
 
 def group_events(df_flagged, values, event_type, threshold_str, gap=200):
-    """
-    Collapse consecutive flagged rows into single peak events
-    """
     if df_flagged.empty:
         return []
-
-    events = []
-    group_indices = []
-
+    events, group_indices = [], []
     for idx in df_flagged.index:
         if not group_indices or (df_flagged.loc[idx, 'time_s'] - df_flagged.loc[group_indices[-1], 'time_s']) <= gap:
             group_indices.append(idx)
         else:
             peak_idx = values.loc[group_indices].idxmax()
-            events.append({
-                "time_s":    df_flagged.loc[peak_idx, 'time_s'],
-                "type":      event_type,
-                "value":     round(values.loc[peak_idx], 3),
-                "threshold": threshold_str,
-            })
+            events.append({"time_s": df_flagged.loc[peak_idx, 'time_s'], "type": event_type,
+                           "value": round(values.loc[peak_idx], 3), "threshold": threshold_str})
             group_indices = [idx]
-
     if group_indices:
         peak_idx = values.loc[group_indices].idxmax()
-        events.append({
-            "time_s":    df_flagged.loc[peak_idx, 'time_s'],
-            "type":      event_type,
-            "value":     round(values.loc[peak_idx], 3),
-            "threshold": threshold_str,
-        })
-
+        events.append({"time_s": df_flagged.loc[peak_idx, 'time_s'], "type": event_type,
+                       "value": round(values.loc[peak_idx], 3), "threshold": threshold_str})
     return events
 
 
 def detect_anomalies(df):
-    """
-    Detects unusual spikes/drops in the CSV file
-    """
-    RPM_DROP_THRESHOLD   = 1000
-    TEMP_SPIKE_THRESHOLD = 15
-    MAX_G_THRESHOLD      = 0.75  
-    RPM_WINDOW           = 10
+    RPM_DROP_THRESHOLD, TEMP_SPIKE_THRESHOLD, MAX_G_THRESHOLD, RPM_WINDOW = 1000, 15, 0.75, 10
 
     anomalies = []
-
-    # RPM drop?
     rpm_rolling_mean = df['rpm'].rolling(window=RPM_WINDOW, center=True).mean()
     rpm_drop_mask = (rpm_rolling_mean - df['rpm']) > RPM_DROP_THRESHOLD
     anomalies += group_events(df[rpm_drop_mask], rpm_rolling_mean - df['rpm'], "rpm_drop", f">{RPM_DROP_THRESHOLD} below rolling mean")
- 
-    # Temp spike?
     temp_delta = df['temp'].diff().abs()
     temp_spike_mask = temp_delta > TEMP_SPIKE_THRESHOLD
     anomalies += group_events(df[temp_spike_mask], temp_delta, "temp_spike", f">{TEMP_SPIKE_THRESHOLD}° change per step")
- 
-    # Max-G event?
     g_magnitude = np.sqrt(df['gx']**2 + df['gy']**2)
     max_g_mask = g_magnitude > MAX_G_THRESHOLD
     anomalies += group_events(df[max_g_mask], g_magnitude, "max_g", f">{MAX_G_THRESHOLD}G combined magnitude")
- 
-    # Summary table
     if anomalies:
-        summary = pd.DataFrame(anomalies).sort_values("time_s").reset_index(drop=True)
-    else:
-        summary = pd.DataFrame(columns=["time_s", "type", "value", "threshold"])
-
-    return summary
+        return pd.DataFrame(anomalies).sort_values("time_s").reset_index(drop=True)
+    return pd.DataFrame(columns=["time_s", "type", "value", "threshold"])
 
 
 def get_cvt_engagement(df):
-    """
-    Find RPM plateau where speed begins rising -> return timestamp index
-    """
     mask = df['speed'] > 0.5
-    if not mask.any():
-        return None
-    return mask.idxmax()
+    return mask.idxmax() if mask.any() else None
 
-def create_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
-    plots = {}
-    
-    def plot_line(y_col, title):
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df1['time_s'], y=df1[y_col], mode='lines', name='Run 1', line=dict(color='blue')))
-        if cvt_idx1 is not None and cvt_idx1 in df1.index:
-            fig.add_vline(x=df1.loc[cvt_idx1, 'time_s'], line_dash="dash", line_color="green", annotation_text="CVT 1")
-        if df2 is not None:
-            fig.add_trace(go.Scatter(x=df2['time_s'], y=df2[y_col], mode='lines', name='Run 2', line=dict(color='red', dash='dot')))
-            if cvt_idx2 is not None and cvt_idx2 in df2.index:
-                fig.add_vline(x=df2.loc[cvt_idx2, 'time_s'], line_dash="dash", line_color="orange", annotation_text="CVT 2")
-        fig.update_layout(title=title, xaxis_title='Time (s)', yaxis_title=y_col.capitalize())
-        return fig
-    
-    plots["Speed"] = plot_line('speed', 'Speed vs Time')
-    plots["RPM"] = plot_line('rpm', 'RPM vs Time')
-    plots["Temperature"] = plot_line('temp', 'Temperature Trend')
-    plots["Voltage"] = plot_line('voltage', 'Voltage Chart')
 
-    # G-Force XY scatter
-    fig_g = go.Figure()
-    fig_g.add_trace(go.Scatter(x=df1['gx'], y=df1['gy'], mode='markers', 
-                               marker=dict(color=df1['speed'], colorscale='Viridis', showscale=True, colorbar=dict(title="Speed 1")),
-                               name='Run 1'))
+def make_line_plot(df1, df2, col, title, yaxis_title, cvt_idx1=None, cvt_idx2=None):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df1['time_s'], y=df1[col], mode='lines', name='Run 1',
+        line=dict(color=RUN1_COLOR, width=1.8)
+    ))
+    if cvt_idx1 is not None and cvt_idx1 in df1.index:
+        cvt_x = df1.loc[cvt_idx1, 'time_s']
+        fig.add_vline(x=cvt_x, line_dash="dot", line_color=RUN1_COLOR, line_width=1,
+                      annotation_text="CVT·1", annotation_font_size=10,
+                      annotation_font_color=RUN1_COLOR, annotation_position="top right")
     if df2 is not None:
-        fig_g.add_trace(go.Scatter(x=df2['gx'], y=df2['gy'], mode='markers', 
-                                   marker=dict(color=df2['speed'], colorscale='Plasma', showscale=True, colorbar=dict(title="Speed 2", x=1.15)),
-                                   name='Run 2'))
-    fig_g.add_vline(x=0, line_color='gray', line_dash='dash')
-    fig_g.add_hline(y=0, line_color='gray', line_dash='dash')
-    fig_g.update_layout(xaxis_range=[-2, 2], yaxis_range=[-2, 2], xaxis_title="Gx", yaxis_title="Gy", title='G-Force XY Scatter')
-    plots["G-Force"] = fig_g
+        fig.add_trace(go.Scatter(
+            x=df2['time_s'], y=df2[col], mode='lines', name='Run 2',
+            line=dict(color=RUN2_COLOR, width=1.8, dash='dot')
+        ))
+        if cvt_idx2 is not None and cvt_idx2 in df2.index:
+            cvt_x2 = df2.loc[cvt_idx2, 'time_s']
+            # offset annotation to avoid collision with Run 1
+            fig.add_vline(x=cvt_x2, line_dash="dot", line_color=RUN2_COLOR, line_width=1,
+                          annotation_text="CVT·2", annotation_font_size=10,
+                          annotation_font_color=RUN2_COLOR, annotation_position="bottom right")
+    fig.update_layout(**PLOT_LAYOUT, title=title,
+                      yaxis_title=yaxis_title, xaxis_title="Time (ms)")
+    return fig
 
-    return plots
 
-import io
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
+def make_gforce_plot(df1, df2=None):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df1['gx'], y=df1['gy'], mode='markers', name='Run 1',
+        marker=dict(color=df1['speed'], colorscale=[[0, '#0a2a1a'], [1, RUN1_COLOR]],
+                    size=5, opacity=0.8,
+                    colorbar=dict(title=dict(text='Speed R1', font=dict(size=10, color='#00ffb4')),
+                                  thickness=12, len=0.42, y=0.78, yanchor='middle',
+                                  x=1.02, tickfont=dict(size=9), outlinewidth=0,
+                                  bgcolor='rgba(0,0,0,0)'))
+    ))
+    if df2 is not None:
+        fig.add_trace(go.Scatter(
+            x=df2['gx'], y=df2['gy'], mode='markers', name='Run 2',
+            marker=dict(color=df2['speed'], colorscale=[[0, '#2a1000'], [1, RUN2_COLOR]],
+                        size=5, opacity=0.8, symbol='diamond',
+                        colorbar=dict(title=dict(text='Speed R2', font=dict(size=10, color='#ff6b35')),
+                                      thickness=12, len=0.42, y=0.28, yanchor='middle',
+                                      x=1.02, tickfont=dict(size=9), outlinewidth=0,
+                                      bgcolor='rgba(0,0,0,0)'))
+        ))
+    fig.add_vline(x=0, line_color='#2a4a5a', line_dash='dash', line_width=0.8)
+    fig.add_hline(y=0, line_color='#2a4a5a', line_dash='dash', line_width=0.8)
+    axis_style = dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False)
+    gforce_layout = {k: v for k, v in PLOT_LAYOUT.items() if k not in ('xaxis', 'yaxis')}
+    fig.update_layout(
+        **gforce_layout,
+        title="G-Force XY Scatter",
+        xaxis=dict(**axis_style, range=[-2, 2], title="Gx (long)"),
+        yaxis=dict(**axis_style, range=[-2, 2], title="Gy (lat)"),
+    )
+    return fig
 
-@st.cache_data(show_spinner="Generating PDF...")
+
+def create_all_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
+    return {
+        "Speed":       make_line_plot(df1, df2, 'speed',   'Speed vs Time',       'Speed (mph)',    cvt_idx1, cvt_idx2),
+        "RPM":         make_line_plot(df1, df2, 'rpm',     'RPM vs Time',         'RPM',            cvt_idx1, cvt_idx2),
+        "Temperature": make_line_plot(df1, df2, 'temp',    'Temperature Trend',   'Temp (°F)',      cvt_idx1, cvt_idx2),
+        "Voltage":     make_line_plot(df1, df2, 'voltage', 'Voltage',             'Voltage (V)',    cvt_idx1, cvt_idx2),
+        "G-Force":     make_gforce_plot(df1, df2),
+    }
+
+
+def _pdf_styles():
+    base = getSampleStyleSheet()
+
+    dark   = rl_colors.HexColor('#0a0e17')
+    teal   = rl_colors.HexColor('#00ffb4')
+    light  = rl_colors.HexColor('#c8d8e8')
+    muted  = rl_colors.HexColor('#4a7a8a')
+    panel  = rl_colors.HexColor('#0f1a24')
+    border = rl_colors.HexColor('#1a3a4a')
+
+    title = ParagraphStyle('METitle',
+        fontName='Helvetica-Bold', fontSize=26, leading=30,
+        textColor=teal, spaceAfter=2, alignment=TA_LEFT,
+        letterSpacing=3)
+    subtitle = ParagraphStyle('MESubtitle',
+        fontName='Helvetica', fontSize=8, leading=12,
+        textColor=muted, spaceAfter=14, alignment=TA_LEFT,
+        letterSpacing=2)
+    section = ParagraphStyle('MESection',
+        fontName='Helvetica-Bold', fontSize=9, leading=14,
+        textColor=teal, spaceBefore=18, spaceAfter=6,
+        alignment=TA_LEFT, letterSpacing=2,
+        borderPadding=(0, 0, 4, 0))
+    body = ParagraphStyle('MEBody',
+        fontName='Helvetica', fontSize=9, leading=14,
+        textColor=light, spaceAfter=4)
+    meta_key = ParagraphStyle('MEMetaKey',
+        fontName='Helvetica-Bold', fontSize=8,
+        textColor=muted, leading=12)
+    meta_val = ParagraphStyle('MEMetaVal',
+        fontName='Helvetica-Bold', fontSize=11,
+        textColor=teal, leading=14)
+
+    return dict(title=title, subtitle=subtitle, section=section,
+                body=body, meta_key=meta_key, meta_val=meta_val,
+                dark=dark, teal=teal, light=light, muted=muted,
+                panel=panel, border=border)
+
+
+def _divider(color):
+    return HRFlowable(width='100%', thickness=0.5, color=color, spaceAfter=6, spaceBefore=2)
+
+
+def _meta_table(rows, s):
+    """rows = list of (label, value) tuples; renders as a clean two-row card grid"""
+    col_w = (7.0 / len(rows)) * inch
+    header_row = [Paragraph(k, s['meta_key']) for k, _ in rows]
+    value_row  = [Paragraph(v, s['meta_val']) for _, v in rows]
+    t = Table([header_row, value_row], colWidths=[col_w]*len(rows))
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,-1), s['panel']),
+        ('BOX',           (0,0), (-1,-1), 0.5,  s['border']),
+        ('INNERGRID',     (0,0), (-1,-1), 0.25, s['border']),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING',   (0,0), (-1,-1), 10),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 10),
+        ('VALIGN',        (0,0), (-1,-1), 'TOP'),
+    ]))
+    return t
+
+
+def _anomaly_table(summary_df, s):
+    col_labels = ['Run', 'Time (ms)', 'Type', 'Value', 'Threshold']
+    col_keys   = ['run', 'time_s', 'type', 'value', 'threshold']
+    col_widths = [0.6*inch, 0.9*inch, 1.0*inch, 0.8*inch, 2.7*inch]
+
+    header = [Paragraph(c, ParagraphStyle('AH', fontName='Helvetica-Bold',
+              fontSize=8, textColor=s['teal'], leading=12)) for c in col_labels]
+    rows = [header]
+    for _, row in summary_df.iterrows():
+        style = ParagraphStyle('AC', fontName='Helvetica', fontSize=8,
+                               textColor=s['light'], leading=12)
+        rows.append([Paragraph(str(row.get(k, '')), style) for k in col_keys])
+
+    t = Table(rows, colWidths=col_widths, repeatRows=1)
+    stripe = rl_colors.HexColor('#111e2a')
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0), (-1,0),  s['border']),
+        ('BACKGROUND',    (0,1), (-1,-1), s['panel']),
+        ('ROWBACKGROUNDS',(0,1), (-1,-1), [s['panel'], stripe]),
+        ('BOX',           (0,0), (-1,-1), 0.5,  s['border']),
+        ('LINEBELOW',     (0,0), (-1,0),  0.8,  s['teal']),
+        ('INNERGRID',     (0,1), (-1,-1), 0.25, s['border']),
+        ('TOPPADDING',    (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('LEFTPADDING',   (0,0), (-1,-1), 8),
+        ('ALIGN',         (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    return t
+
+
+class _DarkPageTemplate:
+    """Draws the dark background + header bar on every page via onPage callback."""
+    @staticmethod
+    def on_page(canvas, doc):
+        w, h = letter
+        canvas.saveState()
+        # Dark background
+        canvas.setFillColor(rl_colors.HexColor('#0a0e17'))
+        canvas.rect(0, 0, w, h, fill=1, stroke=0)
+        # Top accent bar
+        canvas.setFillColor(rl_colors.HexColor('#00ffb4'))
+        canvas.rect(0, h-3, w, 3, fill=1, stroke=0)
+        # Footer
+        canvas.setFillColor(rl_colors.HexColor('#1a3a4a'))
+        canvas.rect(0, 0, w, 24, fill=1, stroke=0)
+        canvas.setFont('Helvetica', 7)
+        canvas.setFillColor(rl_colors.HexColor('#4a7a8a'))
+        canvas.drawString(0.75*inch, 8, 'MECHAEAGLES — POST-RUN DATA ANALYSIS PIPELINE')
+        canvas.drawRightString(w - 0.75*inch, 8, f'Page {doc.page}')
+        canvas.restoreState()
+
+
+@st.cache_data(show_spinner="Generating PDF report...")
 def build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, summary_df):
-    plots = create_plots(df1, cvt_idx1, df2, cvt_idx2)
+    plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
+    s = _pdf_styles()
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        leftMargin=0.75*inch, rightMargin=0.75*inch,
+        topMargin=0.6*inch, bottomMargin=0.55*inch,
+    )
+
+    two_runs = df2 is not None
+    now = datetime.datetime.now().strftime('%Y-%m-%d  %H:%M')
     elements = []
-    
-    styles = getSampleStyleSheet()
-    elements.append(Paragraph("Post-Run Data Analysis Report", styles['Title']))
-    elements.append(Spacer(1, 12))
-    
-    # Anomalies
-    elements.append(Paragraph("Anomaly Summary", styles['Heading2']))
+
+    # Cover Block
+    elements += [
+        Paragraph('MECHAEAGLES', s['title']),
+        Paragraph('POST-RUN DATA ANALYSIS REPORT  ·  ' + now, s['subtitle']),
+        _divider(s['teal']),
+        Spacer(1, 6),
+    ]
+
+    # Run Metadata Cards
+    elements.append(Paragraph('RUN OVERVIEW', s['section']))
+    run1_meta = [
+        ('Run', 'Run 1'),
+        ('Samples', str(len(df1))),
+        ('Duration', f"{df1['time_s'].max():.0f} ms"),
+        ('Max Speed', f"{df1['speed'].max():.1f} mph"),
+        ('Max RPM', f"{df1['rpm'].max():.0f}"),
+        ('Max Temp', f"{df1['temp'].max():.1f} °F"),
+    ]
+    elements.append(_meta_table(run1_meta, s))
+
+    if two_runs:
+        elements.append(Spacer(1, 8))
+        run2_meta = [
+            ('Run', 'Run 2'),
+            ('Samples', str(len(df2))),
+            ('Duration', f"{df2['time_s'].max():.0f} ms"),
+            ('Max Speed', f"{df2['speed'].max():.1f} mph"),
+            ('Max RPM', f"{df2['rpm'].max():.0f}"),
+            ('Max Temp', f"{df2['temp'].max():.1f} °F"),
+        ]
+        elements.append(_meta_table(run2_meta, s))
+
+    # CVT Engagement
+    elements.append(Paragraph('CVT ENGAGEMENT', s['section']))
+    cvt_rows = []
+    if cvt_idx1 is not None and cvt_idx1 in df1.index:
+        cvt_rows.append(('CVT-1 Time', f"{df1.loc[cvt_idx1,'time_s']:.0f} ms"))
+        cvt_rows.append(('CVT-1 RPM',  f"{df1.loc[cvt_idx1,'rpm']:.0f}"))
+    if two_runs and cvt_idx2 is not None and cvt_idx2 in df2.index:
+        cvt_rows.append(('CVT-2 Time', f"{df2.loc[cvt_idx2,'time_s']:.0f} ms"))
+        cvt_rows.append(('CVT-2 RPM',  f"{df2.loc[cvt_idx2,'rpm']:.0f}"))
+    if cvt_rows:
+        elements.append(_meta_table(cvt_rows, s))
+
+    # Anomaly Table
+    elements.append(Paragraph('FLAGGED ANOMALIES', s['section']))
     if not summary_df.empty:
-        # Convert df to string to ensure table format works
-        data = [summary_df.columns.to_list()] + summary_df.astype(str).values.tolist()
-        t = Table(data)
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.grey),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6),
-            ('BACKGROUND', (0,1), (-1,-1), colors.lightgrey),
-            ('GRID', (0,0), (-1,-1), 1, colors.black)
-        ]))
-        elements.append(t)
+        elements.append(_anomaly_table(summary_df, s))
     else:
-        elements.append(Paragraph("No anomalies detected.", styles['Normal']))
-    
-    elements.append(Spacer(1, 12))
-    
-    # Export plots to images and add to PDF
-    for title, fig in plots.items():
-        elements.append(Paragraph(title, styles['Heading2']))
-        img_bytes = fig.to_image(format="png", width=600, height=400)
-        img_io = io.BytesIO(img_bytes)
-        img = Image(img_io, width=400, height=266)
-        elements.append(img)
-        elements.append(Spacer(1, 12))
-        
-    doc.build(elements)
+        elements.append(Paragraph('No anomalies detected.', s['body']))
+
+    elements.append(Spacer(1, 14))
+    _divider(s['border'])
+
+    # Plots
+    elements.append(Paragraph('TELEMETRY PLOTS', s['section']))
+    elements.append(Spacer(1, 4))
+
+    for plot_title, fig in plots.items():
+        img_bytes = fig.to_image(format='png', width=900, height=480, scale=2)
+        img = Image(io.BytesIO(img_bytes), width=7.0*inch, height=3.73*inch)
+        label = Paragraph(plot_title.upper(), ParagraphStyle(
+            'PlotLabel', fontName='Helvetica-Bold', fontSize=8,
+            textColor=s['teal'], leading=12, letterSpacing=1.5, spaceAfter=3))
+        elements.append(KeepTogether([label, img, Spacer(1, 14)]))
+
+    doc.build(elements, onFirstPage=_DarkPageTemplate.on_page,
+              onLaterPages=_DarkPageTemplate.on_page)
     buffer.seek(0)
     return buffer.getvalue()
 
+
 def main():
-    st.set_page_config(page_title="Data Analysis Pipeline", layout="wide")
-    st.title("Post-Run Data Analysis Pipeline")
-    
-    mode = st.radio("Mode", ["Single-CSV", "Two-CSV Comparison"])
-    
+    # Upload Section
+    st.markdown('<div class="me-section">Data Input</div>', unsafe_allow_html=True)
+
+    col_u1, col_u2 = st.columns(2)
+    with col_u1:
+        st.markdown('<div class="me-upload-label">Run 1 — required</div>', unsafe_allow_html=True)
+        f1 = st.file_uploader("Run 1", type=["csv"], key="file1", label_visibility="collapsed")
+    with col_u2:
+        st.markdown('<div class="me-upload-label">Run 2 — optional (enables comparison mode)</div>', unsafe_allow_html=True)
+        f2 = st.file_uploader("Run 2", type=["csv"], key="file2", label_visibility="collapsed")
+
+    # Load data
     df1, df2 = None, None
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("Upload Run 1 CSV")
-        uploaded_file1 = st.file_uploader("Run 1", type=["csv"], key="file1")
-        if uploaded_file1 is not None:
-            df1 = pd.read_csv(uploaded_file1)
-        else:
-            try:
-                df1 = pd.read_csv('./data/run_001_dummy.csv')
-            except FileNotFoundError:
-                st.error("No dummy file found! Please upload a file.")
-                return
-                
-    if mode == "Two-CSV Comparison":
-        with col2:
-            st.write("Upload Run 2 CSV")
-            uploaded_file2 = st.file_uploader("Run 2", type=["csv"], key="file2")
-            if uploaded_file2 is not None:
-                df2 = pd.read_csv(uploaded_file2)
-    
-    if df1 is None:
-        return
-        
+    if f1:
+        df1 = pd.read_csv(f1)
+    else:
+        try:
+            df1 = pd.read_csv('./data/run_001_dummy.csv')
+        except FileNotFoundError:
+            st.error("No CSV uploaded and no dummy file found at ./data/run_001_dummy.csv")
+            return
+
+    if f2:
+        df2 = pd.read_csv(f2)
+
     df1 = enforce_dtypes(normalize_columns(df1))
     if df2 is not None:
         df2 = enforce_dtypes(normalize_columns(df2))
-        
-    # App State logic to reset PDF generation flag when new data comes in
-    current_key = f"{len(df1)}_{df1['time_s'].sum()}"
-    if df2 is not None:
-        current_key += f"_{len(df2)}_{df2['time_s'].sum()}"
-        
+
+    two_runs = df2 is not None
+
+    # Session state reset on new data
+    current_key = f"{len(df1)}_{df1['time_s'].sum()}" + (f"_{len(df2)}_{df2['time_s'].sum()}" if two_runs else "")
     if st.session_state.get("data_key") != current_key:
         st.session_state["data_key"] = current_key
         st.session_state["pdf_requested"] = False
 
-    st.header("Data Anomalies")
-    if df2 is None:
-        summary1 = detect_anomalies(df1)
-        summary1.insert(0, 'Run', 'Run 1')
-        st.dataframe(summary1)
-        pdf_summary = summary1.copy()
-    else:
-        st.subheader("Run 1 Anomalies")
-        summary1 = detect_anomalies(df1)
-        summary1.insert(0, 'Run', 'Run 1')
-        st.dataframe(summary1)
-        st.subheader("Run 2 Anomalies")
-        summary2 = detect_anomalies(df2)
-        summary2.insert(0, 'Run', 'Run 2')
-        st.dataframe(summary2)
-        pdf_summary = pd.concat([summary1, summary2], ignore_index=True)
-
-    st.header("CVT Engagement")
+    # CVT Engagement
     cvt_idx1 = get_cvt_engagement(df1)
+    cvt_idx2 = get_cvt_engagement(df2) if two_runs else None
+
+    st.markdown('<div class="me-section">CVT Engagement</div>', unsafe_allow_html=True)
+
+    cvt_html = '<div class="cvt-grid">'
     if cvt_idx1 is not None and cvt_idx1 in df1.index:
-        v1_time, v1_rpm = df1.loc[cvt_idx1, 'time_s'], df1.loc[cvt_idx1, 'rpm']
-        st.write(f"**Run 1 CVT Engagement:** `{v1_time}` ms | **RPM:** `{v1_rpm}`")
-    else:
-        st.write("**Run 1 CVT Engagement:** None")
-    
-    cvt_idx2 = None
-    if df2 is not None:
-        cvt_idx2 = get_cvt_engagement(df2)
-        if cvt_idx2 is not None and cvt_idx2 in df2.index:
-            v2_time, v2_rpm = df2.loc[cvt_idx2, 'time_s'], df2.loc[cvt_idx2, 'rpm']
-            st.write(f"**Run 2 CVT Engagement:** `{v2_time}` ms | **RPM:** `{v2_rpm}`")
+        t1, r1 = df1.loc[cvt_idx1, 'time_s'], df1.loc[cvt_idx1, 'rpm']
+        cvt_html += f'''<div class="cvt-card">
+            <div class="cvt-card-label">Run 1 — Engagement Time</div>
+            <div class="cvt-card-value">{t1:.0f}<span class="cvt-card-unit">ms</span></div>
+        </div>
+        <div class="cvt-card">
+            <div class="cvt-card-label">Run 1 — Engagement RPM</div>
+            <div class="cvt-card-value">{r1:.0f}<span class="cvt-card-unit">rpm</span></div>
+        </div>'''
+    if two_runs and cvt_idx2 is not None and cvt_idx2 in df2.index:
+        t2, r2 = df2.loc[cvt_idx2, 'time_s'], df2.loc[cvt_idx2, 'rpm']
+        cvt_html += f'''<div class="cvt-card run2">
+            <div class="cvt-card-label">Run 2 — Engagement Time</div>
+            <div class="cvt-card-value">{t2:.0f}<span class="cvt-card-unit">ms</span></div>
+        </div>
+        <div class="cvt-card run2">
+            <div class="cvt-card-label">Run 2 — Engagement RPM</div>
+            <div class="cvt-card-value">{r2:.0f}<span class="cvt-card-unit">rpm</span></div>
+        </div>'''
+    cvt_html += '</div>'
+    st.markdown(cvt_html, unsafe_allow_html=True)
+
+    # Anomalies + Plots
+    st.markdown('<div class="me-section">Anomalies & Plots</div>', unsafe_allow_html=True)
+
+    left_col, right_col = st.columns([1, 2], gap="medium")
+
+    with left_col:
+        summary1 = detect_anomalies(df1)
+        summary1.insert(0, 'run', 'Run 1')
+        if two_runs:
+            summary2 = detect_anomalies(df2)
+            summary2.insert(0, 'run', 'Run 2')
+            pdf_summary = pd.concat([summary1, summary2], ignore_index=True)
         else:
-            st.write("**Run 2 CVT Engagement:** None")
-            
-    st.header("Plots")
-    plots = create_plots(df1, cvt_idx1, df2, cvt_idx2)
-    
-    pc1, pc2 = st.columns(2)
-    with pc1:
-        st.plotly_chart(plots["Speed"], use_container_width=True)
-        st.plotly_chart(plots["Temperature"], use_container_width=True)
-        st.plotly_chart(plots["G-Force"], use_container_width=True)
-    with pc2:
-        st.plotly_chart(plots["RPM"], use_container_width=True)
-        st.plotly_chart(plots["Voltage"], use_container_width=True)
-        
-    st.header("Export Report")
-    
-    if st.button("Prepare PDF Report"):
-        st.session_state["pdf_requested"] = True
-        
-    if st.session_state.get("pdf_requested", False):
-        pdf_bytes = build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, pdf_summary)
-        st.download_button(
-            label="Download PDF",
-            data=pdf_bytes,
-            file_name="report.pdf",
-            mime="application/pdf"
+            pdf_summary = summary1.copy()
+
+        st.markdown("**Flagged Events**", help="Grouped anomalies detected across all channels")
+        st.dataframe(
+            pdf_summary,
+            use_container_width=True,
+            height=420,
+            hide_index=True,
         )
+
+    with right_col:
+        plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
+        tabs = st.tabs(["Speed", "RPM", "Temperature", "Voltage", "G-Force"])
+        for tab, key in zip(tabs, ["Speed", "RPM", "Temperature", "Voltage", "G-Force"]):
+            with tab:
+                st.plotly_chart(plots[key], use_container_width=True)
+
+    # PDF Export
+    st.markdown('<div class="me-section">Export</div>', unsafe_allow_html=True)
+
+    pdf_bytes = build_pdf_report(
+        df1, cvt_idx1,
+        df2 if two_runs else None,
+        cvt_idx2 if two_runs else None,
+        pdf_summary
+    )
+    st.download_button(
+        label="⬇  Download Full PDF Report",
+        data=pdf_bytes,
+        file_name="mechaeagles_report.pdf",
+        mime="application/pdf",
+        use_container_width=False,
+    )
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
