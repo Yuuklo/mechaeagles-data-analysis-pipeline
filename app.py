@@ -26,9 +26,15 @@ st.markdown("""
 /* Base */
 html, body, [class*="css"] {
     font-family: 'Exo 2', sans-serif;
-    background-color: #0a0e17;
+    background-color: #05060a;
     color: #c8d8e8;
 }
+
+/* Full-bleed dark bg — kills Streamlit side margins */
+[data-testid="stAppViewContainer"] {
+    background-color: #05060a;
+}
+[data-testid="stSidebar"] { display: none; }
 
 /* Scanline overlay */
 body::before {
@@ -39,27 +45,38 @@ body::before {
     background: repeating-linear-gradient(
         0deg,
         transparent,
-        transparent 2px,
-        rgba(220,30,60,0.012) 2px,
-        rgba(220,30,60,0.012) 4px
+        transparent 3px,
+        rgba(224,53,69,0.018) 3px,
+        rgba(224,53,69,0.018) 4px
     );
     pointer-events: none;
     z-index: 9999;
 }
 
-/* Remove Streamlit's default top gap so header sits flush */
+/* Animated red corner glow — top-left */
+body::after {
+    content: "";
+    position: fixed;
+    top: -120px; left: -120px;
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(224,53,69,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+    animation: cornerPulse 6s ease-in-out infinite;
+}
+@keyframes cornerPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+/* Remove Streamlit top gap, full-width, no side padding cap */
 .main .block-container {
-    padding: 0 2rem 3rem !important;
-    max-width: 1400px;
-    background-color: #0a0e17;
+    padding: 0 2.5rem 3rem !important;
+    max-width: 100% !important;
+    background-color: #05060a;
 }
-#root > div:first-child {
-    margin-top: 0 !important;
-}
-header[data-testid="stHeader"] {
-    background: transparent;
-    height: 0;
-}
+#root > div:first-child { margin-top: 0 !important; }
+header[data-testid="stHeader"] { background: transparent; height: 0; }
 
 /* ── Header ── */
 .me-header {
@@ -131,7 +148,7 @@ header[data-testid="stHeader"] {
     margin-bottom: 1rem;
 }
 .cvt-card {
-    background: #0f1a24;
+    background: #0b0d14;
     border: 1px solid #252530;
     border-left: 3px solid #e03545;
     padding: 14px 18px;
@@ -157,21 +174,21 @@ header[data-testid="stHeader"] {
     color: #7a7a90;
     margin-left: 4px;
 }
-.cvt-card.run2 { border-left-color: #4d9de0; }
-.cvt-card.run2 .cvt-card-value { color: #4d9de0; }
+.cvt-card.run2 { border-left-color: #f97316; }
+.cvt-card.run2 .cvt-card-value { color: #f97316; }
 
 /* ── Anomaly table ── */
 div[data-testid="stDataFrame"] {
     border: 1px solid #252530 !important;
     border-radius: 4px;
-    background: #0f1a24;
+    background: #0b0d14;
 }
 
 /* ── Plotly chart containers ── */
 div[data-testid="stPlotlyChart"] {
     border: 1px solid #252530;
     border-radius: 4px;
-    background: #0d1520;
+    background: #05060a;
     padding: 4px;
 }
 
@@ -207,8 +224,6 @@ div[data-testid="stRadio"] label {
 h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
 .stAlert { border-radius: 4px; }
 
-/* ── Race car SVG ── */
-.me-racecar { margin-left: auto; opacity: 0.82; flex-shrink: 0; }
 
 /* ── CVT shimmer ── */
 @keyframes shimmer {
@@ -217,11 +232,11 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
   60%  { color: #ff7080; text-shadow: 0 0 14px rgba(255,100,120,0.8), 0 0 28px rgba(224,53,69,0.5); }
   100% { color: #e03545; text-shadow: none; }
 }
-@keyframes shimmer-blue {
-  0%   { color: #4d9de0; text-shadow: none; }
-  40%  { color: #7ab8f0; text-shadow: 0 0 10px rgba(100,180,240,0.7), 0 0 20px rgba(77,157,224,0.4); }
-  60%  { color: #90c8f8; text-shadow: 0 0 14px rgba(120,200,255,0.8), 0 0 28px rgba(77,157,224,0.5); }
-  100% { color: #4d9de0; text-shadow: none; }
+@keyframes shimmer-orange {
+  0%   { color: #f97316; text-shadow: none; }
+  40%  { color: #fba860; text-shadow: 0 0 10px rgba(255,160,60,0.7), 0 0 20px rgba(249,115,22,0.4); }
+  60%  { color: #fdc070; text-shadow: 0 0 14px rgba(255,180,80,0.8), 0 0 28px rgba(249,115,22,0.5); }
+  100% { color: #f97316; text-shadow: none; }
 }
 .cvt-card-value {
     cursor: default;
@@ -231,8 +246,139 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
     animation: shimmer 1.1s ease-in-out infinite;
 }
 .cvt-card.run2:hover .cvt-card-value {
-    animation: shimmer-blue 1.1s ease-in-out infinite;
+    animation: shimmer-orange 1.1s ease-in-out infinite;
 }
+
+/* ── Hex grid background pattern ── */
+.main .block-container::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(224,53,69,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(224,53,69,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Header glow line ── */
+.me-header {
+    position: relative;
+}
+.me-header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, #e03545 0%, rgba(224,53,69,0.3) 40%, transparent 70%);
+}
+
+/* ── Section header glow dot ── */
+.me-section::before {
+    content: "▸";
+    margin-right: 6px;
+    opacity: 0.6;
+    font-size: 0.8em;
+}
+
+/* ── CVT card hover lift ── */
+.cvt-card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cvt-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(224,53,69,0.18);
+}
+.cvt-card.run2:hover {
+    box-shadow: 0 4px 20px rgba(249,115,22,0.18);
+}
+
+/* ── Chart container hover glow ── */
+div[data-testid="stPlotlyChart"]:hover {
+    border-color: rgba(224,53,69,0.4) !important;
+    box-shadow: 0 0 18px rgba(224,53,69,0.10);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* ── Tab styling ── */
+div[data-testid="stTabs"] button {
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.1em !important;
+    color: #6a6a80 !important;
+    text-transform: uppercase !important;
+}
+div[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #e03545 !important;
+    border-bottom: 2px solid #e03545 !important;
+}
+
+/* ── Logo pulse ── */
+.me-logo-mark {
+    animation: logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse {
+    0%, 100% { box-shadow: none; }
+    50%       { box-shadow: 0 0 22px rgba(224,53,69,0.55); }
+}
+
+/* ── Dataframe hover row highlight ── */
+div[data-testid="stDataFrame"] tr:hover td {
+    background: rgba(224,53,69,0.06) !important;
+}
+
+/* ── Compact file uploader ── */
+div[data-testid="stFileUploader"] {
+    background: #0b0d14 !important;
+    border: 1px dashed rgba(224,53,69,0.35) !important;
+    border-radius: 6px !important;
+    padding: 0 !important;
+    transition: border-color 0.2s, background 0.2s !important;
+}
+div[data-testid="stFileUploader"]:hover {
+    border-color: #e03545 !important;
+    background: rgba(224,53,69,0.04) !important;
+}
+div[data-testid="stFileUploader"] section {
+    padding: 8px 14px !important;
+    min-height: unset !important;
+}
+div[data-testid="stFileUploader"] button {
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.1em !important;
+    padding: 3px 12px !important;
+    height: auto !important;
+    border-radius: 3px !important;
+    color: #e03545 !important;
+    border-color: #e03545 !important;
+    background: transparent !important;
+}
+div[data-testid="stFileUploaderDropzoneInstructions"] {
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 0.68rem !important;
+    color: #6a6a80 !important;
+}
+div[data-testid="uploadedFile"] {
+    background: rgba(224,53,69,0.06) !important;
+    border: 1px solid rgba(224,53,69,0.2) !important;
+    border-radius: 4px !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 0.7rem !important;
+    color: #e03545 !important;
+    padding: 4px 10px !important;
+}
+
+/* ── Dot grid canvas (drawn by JS) ── */
+#me-dotgrid {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
 </style>
 
 <div class="me-header">
@@ -241,60 +387,50 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
     <div class="me-brand-name">MechaEagles</div>
     <div class="me-brand-sub">Post-Run Data Analysis Pipeline &nbsp;·&nbsp; v1.0</div>
   </div>
-  <div class="me-racecar">
-    <svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72">
-      <!-- Shadow -->
-      <ellipse cx="110" cy="66" rx="80" ry="5" fill="rgba(0,0,0,0.35)"/>
-      <!-- Main body -->
-      <path d="M18 46 Q22 30 48 26 L72 22 Q90 14 110 13 Q130 14 148 22 L172 26 Q198 30 202 46 L210 52 Q214 58 208 60 L16 60 Q8 58 10 52 Z"
-            fill="#141418" stroke="#e03545" stroke-width="1.2"/>
-      <!-- Cockpit canopy -->
-      <path d="M72 25 Q90 10 110 9 Q130 10 148 25 L142 26 Q124 16 110 15 Q96 16 78 26 Z"
-            fill="#0e0e12" stroke="#4d9de0" stroke-width="0.8"/>
-      <!-- Cockpit glass -->
-      <path d="M80 24 Q96 13 110 12 Q124 13 140 24 L134 25 Q120 15 110 14 Q100 15 86 25 Z"
-            fill="rgba(200,16,46,0.15)" stroke="rgba(200,16,46,0.4)" stroke-width="0.5"/>
-      <!-- Front wing -->
-      <path d="M10 52 L2 56 L6 60 L18 58 Z" fill="#e03545" stroke="#4d9de0" stroke-width="0.8"/>
-      <path d="M10 52 L16 58 L18 56 L14 50 Z" fill="#4d9de0"/>
-      <!-- Rear wing main plane -->
-      <path d="M190 38 L216 36 L218 40 L190 43 Z" fill="#e03545" stroke="#4d9de0" stroke-width="0.8"/>
-      <!-- Rear wing endplate -->
-      <path d="M214 34 L218 34 L218 44 L214 44 Z" fill="#4d9de0"/>
-      <!-- Sidepods -->
-      <path d="M60 42 Q65 36 80 34 L82 46 Q70 46 62 48 Z" fill="#1c1c22" stroke="#e03545" stroke-width="0.6"/>
-      <path d="M140 34 Q155 36 160 42 L158 48 Q150 46 138 46 Z" fill="#1c1c22" stroke="#e03545" stroke-width="0.6"/>
-      <!-- Front left wheel -->
-      <ellipse cx="38" cy="56" rx="11" ry="7" fill="#111" stroke="#252530" stroke-width="1.2"/>
-      <ellipse cx="38" cy="56" rx="6" ry="4" fill="#141418" stroke="#e03545" stroke-width="0.8"/>
-      <ellipse cx="38" cy="56" rx="2" ry="1.5" fill="#e03545"/>
-      <!-- Front right wheel -->
-      <ellipse cx="38" cy="56" rx="11" ry="7" fill="#111" stroke="#252530" stroke-width="1.2"/>
-      <!-- Rear left wheel -->
-      <ellipse cx="172" cy="56" rx="13" ry="8" fill="#111" stroke="#252530" stroke-width="1.2"/>
-      <ellipse cx="172" cy="56" rx="7" ry="4.5" fill="#141418" stroke="#e03545" stroke-width="0.8"/>
-      <ellipse cx="172" cy="56" rx="2.5" ry="1.8" fill="#e03545"/>
-      <!-- Rear right wheel same -->
-      <ellipse cx="172" cy="56" rx="13" ry="8" fill="#111" stroke="#252530" stroke-width="1.2"/>
-      <!-- Halo -->
-      <path d="M96 19 Q110 14 124 19 L122 21 Q110 16 98 21 Z" fill="none" stroke="#e03545" stroke-width="1.5" stroke-linecap="round"/>
-      <!-- Nose cone -->
-      <path d="M18 46 L10 50 L12 54 L22 52 Z" fill="#e03545" stroke="#4d9de0" stroke-width="0.8"/>
-      <!-- Number plate -->
-      <rect x="96" y="29" width="28" height="14" rx="2" fill="#e03545" opacity="0.15" stroke="#e03545" stroke-width="0.5"/>
-      <!-- Speed lines -->
-      <line x1="0" y1="38" x2="14" y2="38" stroke="#e03545" stroke-width="0.8" opacity="0.5"/>
-      <line x1="0" y1="43" x2="10" y2="43" stroke="#4d9de0" stroke-width="0.6" opacity="0.4"/>
-      <line x1="0" y1="48" x2="8"  y2="48" stroke="#e03545" stroke-width="0.5" opacity="0.3"/>
-    </svg>
-  </div>
 </div>
+<canvas id="me-dotgrid"></canvas>
+<script>
+(function(){
+  var c=document.getElementById("me-dotgrid");
+  if(!c)return;
+  var ctx=c.getContext("2d");
+  var mx=-9999,my=-9999;
+  var SPACING=28,DOT_R=1.1,GLOW_R=120;
+  var BASE="rgba(60,60,80,0.45)",HOT="224,53,69";
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();
+  window.addEventListener("resize",resize);
+  window.addEventListener("mousemove",function(e){mx=e.clientX;my=e.clientY;});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    var cols=Math.ceil(c.width/SPACING)+1;
+    var rows=Math.ceil(c.height/SPACING)+1;
+    for(var r=0;r<rows;r++){
+      for(var cl=0;cl<cols;cl++){
+        var x=cl*SPACING,y=r*SPACING;
+        var dx=x-mx,dy=y-my;
+        var dist=Math.sqrt(dx*dx+dy*dy);
+        var t=Math.max(0,1-dist/GLOW_R);
+        var alpha=0.18+t*0.72;
+        var radius=DOT_R+t*1.4;
+        ctx.beginPath();
+        ctx.arc(x,y,radius,0,Math.PI*2);
+        if(t>0.01){ctx.fillStyle="rgba("+HOT+","+alpha.toFixed(2)+")";}
+        else{ctx.fillStyle=BASE;}
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # ── Plotly dark theme ───────────────────────────────────────────────────────
 PLOT_LAYOUT = dict(
-    paper_bgcolor="#0d1520",
-    plot_bgcolor="#0d1520",
+    paper_bgcolor="#05060a",
+    plot_bgcolor="#07090f",
     font=dict(family="Exo 2, sans-serif", color="#8aaabb", size=11),
     xaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
     yaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
@@ -312,7 +448,7 @@ PLOT_LAYOUT = dict(
 )
 
 RUN1_COLOR = "#e03545"
-RUN2_COLOR = "#4d9de0"
+RUN2_COLOR = "#f97316"
 
 # ── Column config ───────────────────────────────────────────────────────────
 COLUMN_ALIASES = {
@@ -430,9 +566,9 @@ def make_gforce_plot(df1, df2=None):
     if df2 is not None:
         fig.add_trace(go.Scatter(
             x=df2['gx'], y=df2['gy'], mode='markers', name='Run 2',
-            marker=dict(color=df2['speed'], colorscale=[[0, '#080818'], [1, RUN2_COLOR]],
+            marker=dict(color=df2['speed'], colorscale=[[0, '#100800'], [1, RUN2_COLOR]],
                         size=5, opacity=0.8, symbol='diamond',
-                        colorbar=dict(title=dict(text='Speed R2', font=dict(size=10, color='#4d9de0')),
+                        colorbar=dict(title=dict(text='Speed R2', font=dict(size=10, color='#f97316')),
                                       thickness=12, len=0.42, y=0.28, yanchor='middle',
                                       x=1.02, tickfont=dict(size=9), outlinewidth=0,
                                       bgcolor='rgba(0,0,0,0)'))
@@ -559,24 +695,47 @@ def _anomaly_table(summary_df, s):
 
 
 class _DarkPageTemplate:
-    """Draws the dark background + header bar on every page via onPage callback."""
+    """Draws dark bg, sidebar stripe, dot texture, top rule, and footer on every page."""
     @staticmethod
     def on_page(canvas, doc):
         w, h = letter
+        L = 0.75*inch
         canvas.saveState()
-        # dark background
-        canvas.setFillColor(rl_colors.HexColor('#0a0e17'))
+        # full dark background
+        canvas.setFillColor(rl_colors.HexColor('#0c0d12'))
         canvas.rect(0, 0, w, h, fill=1, stroke=0)
-        # top accent bar
-        canvas.setFillColor(rl_colors.HexColor('#00ffb4'))
-        canvas.rect(0, h-3, w, 3, fill=1, stroke=0)
-        # footer
-        canvas.setFillColor(rl_colors.HexColor('#1a3a4a'))
-        canvas.rect(0, 0, w, 24, fill=1, stroke=0)
+        # subtle dot grid texture
+        canvas.setFillColor(rl_colors.HexColor('#17181f'))
+        spacing = 18
+        for row_y in range(0, int(h)+spacing, spacing):
+            for col_x in range(0, int(w)+spacing, spacing):
+                canvas.circle(col_x, row_y, 0.65, fill=1, stroke=0)
+        # left sidebar accent stripe
+        canvas.setFillColor(rl_colors.HexColor('#e03545'))
+        canvas.rect(0, 28, 3, h-28, fill=1, stroke=0)
+        # top rule
+        canvas.setStrokeColor(rl_colors.HexColor('#e03545'))
+        canvas.setLineWidth(0.5)
+        canvas.line(L, h-26, w-L, h-26)
+        # running header on pages after page 1
+        if doc.page > 1:
+            canvas.setFont('Helvetica-Bold', 7)
+            canvas.setFillColor(rl_colors.HexColor('#e03545'))
+            canvas.drawString(L, h-18, 'MECHAEAGLES')
+            canvas.setFont('Helvetica', 7)
+            canvas.setFillColor(rl_colors.HexColor('#5a5a70'))
+            canvas.drawString(L+56, h-18, 'POST-RUN DATA ANALYSIS PIPELINE')
+        # footer bar
+        canvas.setFillColor(rl_colors.HexColor('#12131a'))
+        canvas.rect(0, 0, w, 28, fill=1, stroke=0)
+        canvas.setStrokeColor(rl_colors.HexColor('#252535'))
+        canvas.setLineWidth(0.5)
+        canvas.line(0, 28, w, 28)
         canvas.setFont('Helvetica', 7)
-        canvas.setFillColor(rl_colors.HexColor('#4a7a8a'))
-        canvas.drawString(0.75*inch, 8, 'MECHAEAGLES — POST-RUN DATA ANALYSIS PIPELINE')
-        canvas.drawRightString(w - 0.75*inch, 8, f'Page {doc.page}')
+        canvas.setFillColor(rl_colors.HexColor('#5a5a70'))
+        canvas.drawString(L, 10, 'MECHAEAGLES  ·  POST-RUN DATA ANALYSIS PIPELINE')
+        canvas.setFillColor(rl_colors.HexColor('#e03545'))
+        canvas.drawRightString(w-L, 10, f'PAGE {doc.page}')
         canvas.restoreState()
 
 
@@ -651,16 +810,38 @@ def build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, summary_df):
     _divider(s['border'])
 
     # ── Plots ─────────────────────────────────────────────────────────────────
+    elements.append(Spacer(1, 10))
+    elements.append(_divider(s['teal']))
     elements.append(Paragraph('TELEMETRY PLOTS', s['section']))
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 6))
+
+    plot_label_style = ParagraphStyle(
+        'PlotLabel', fontName='Helvetica-Bold', fontSize=7,
+        textColor=s['teal'], leading=10, letterSpacing=2.0,
+        spaceAfter=3, spaceBefore=16)
+    plot_caption_style = ParagraphStyle(
+        'PlotCaption', fontName='Helvetica', fontSize=7,
+        textColor=s['muted'], leading=10, spaceAfter=6)
+
+    plot_descriptions = {
+        'Speed':       'Vehicle speed over run duration. CVT engagement point marked as dashed vertical line.',
+        'RPM':         'Engine RPM over run duration. Plateau region indicates belt engagement threshold.',
+        'Temperature': 'Drivetrain temperature trend across the run. Sudden rises are flagged as anomalies.',
+        'Voltage':     'System voltage over run duration. Sustained sag may indicate electrical load issues.',
+        'G-Force':     'Lateral (Gy) vs longitudinal (Gx) G-force. Colour-coded by speed. Circle = Run 1, Diamond = Run 2.',
+    }
 
     for plot_title, fig in plots.items():
-        img_bytes = fig.to_image(format='png', width=900, height=480, scale=2)
-        img = Image(io.BytesIO(img_bytes), width=7.0*inch, height=3.73*inch)
-        label = Paragraph(plot_title.upper(), ParagraphStyle(
-            'PlotLabel', fontName='Helvetica-Bold', fontSize=8,
-            textColor=s['teal'], leading=12, letterSpacing=1.5, spaceAfter=3))
-        elements.append(KeepTogether([label, img, Spacer(1, 14)]))
+        img_bytes = fig.to_image(format='png', width=1000, height=500, scale=2)
+        img = Image(io.BytesIO(img_bytes), width=7.0*inch, height=3.5*inch)
+        img.hAlign = 'LEFT'
+        block = [
+            Paragraph(plot_title.upper(), plot_label_style),
+            Paragraph(plot_descriptions.get(plot_title, ''), plot_caption_style),
+            img,
+            Spacer(1, 8),
+        ]
+        elements.append(KeepTogether(block))
 
     doc.build(elements, onFirstPage=_DarkPageTemplate.on_page,
               onLaterPages=_DarkPageTemplate.on_page)
