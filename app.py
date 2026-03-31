@@ -21,13 +21,14 @@ st.set_page_config(
 # ── Global CSS ──────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@600;700&display=swap');
 
 /* Base */
 html, body, [class*="css"] {
-    font-family: 'Exo 2', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     background-color: #05060a;
     color: #c8d8e8;
+    font-size: 16px;
 }
 
 /* Full-bleed dark bg — kills Streamlit side margins */
@@ -46,20 +47,20 @@ body::before {
         0deg,
         transparent,
         transparent 3px,
-        rgba(224,53,69,0.018) 3px,
-        rgba(224,53,69,0.018) 4px
+        rgba(212,80,10,0.018) 3px,
+        rgba(212,80,10,0.018) 4px
     );
     pointer-events: none;
     z-index: 9999;
 }
 
-/* Animated red corner glow — top-left */
+/* Corner glow — top-left */
 body::after {
     content: "";
     position: fixed;
     top: -120px; left: -120px;
     width: 480px; height: 480px;
-    background: radial-gradient(circle, rgba(224,53,69,0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(212,80,10,0.14) 0%, transparent 70%);
     pointer-events: none;
     z-index: 1;
     animation: cornerPulse 6s ease-in-out infinite;
@@ -67,6 +68,46 @@ body::after {
 @keyframes cornerPulse {
     0%, 100% { opacity: 0.5; transform: scale(1); }
     50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ── Diagonal red streak lines ── */
+.me-streak-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+.me-streak-canvas::before,
+.me-streak-canvas::after {
+    content: "";
+    position: absolute;
+    background: linear-gradient(
+        135deg,
+        transparent 0%,
+        rgba(180,30,10,0.07) 40%,
+        rgba(212,80,10,0.12) 50%,
+        rgba(180,30,10,0.07) 60%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+.me-streak-canvas::before {
+    width: 2px; height: 140%;
+    top: -20%; left: 18%;
+    transform: rotate(15deg);
+    animation: streakFade 8s ease-in-out infinite;
+}
+.me-streak-canvas::after {
+    width: 1px; height: 140%;
+    top: -20%; left: 72%;
+    transform: rotate(15deg);
+    animation: streakFade 8s ease-in-out infinite 3s;
+}
+@keyframes streakFade {
+    0%,100% { opacity: 0.4; }
+    50%      { opacity: 1; }
 }
 
 /* Remove Streamlit top gap, full-width, no side padding cap */
@@ -83,57 +124,72 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
     display: flex;
     align-items: center;
     gap: 24px;
-    padding: 2rem 2rem 1.4rem;
+    padding: 2.6rem 2rem 1.8rem;
     border-bottom: 1px solid #252530;
     margin-bottom: 1.8rem;
-    background: linear-gradient(90deg, rgba(224,53,69,0.05) 0%, transparent 60%);
+    background: linear-gradient(90deg, rgba(212,80,10,0.06) 0%, transparent 60%);
 }
 .me-logo-mark {
-    width: 64px; height: 64px;
-    background: #e03545;
+    width: 80px; height: 80px;
+    background: #d4500a;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
 .me-logo-inner {
-    width: 38px; height: 38px;
+    width: 48px; height: 48px;
     background: #0a0e17;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
 .me-brand { line-height: 1.15; }
 .me-brand-name {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 2.4rem;
+    font-size: 3.0rem;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    color: #e03545;
+    letter-spacing: 0.16em;
+    color: #d4500a;
     text-transform: uppercase;
 }
 .me-brand-sub {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92rem;
     color: #6a6a80;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
 }
 
 /* ── Section headers ── */
 .me-section {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.05rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: #e03545;
-    border-left: 3px solid #e03545;
-    padding-left: 10px;
-    margin: 1.6rem 0 0.8rem;
+    color: #d4500a;
+    padding: 12px 18px 12px 18px;
+    margin: 2.4rem 0 1.2rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(90deg, rgba(212,80,10,0.10) 0%, rgba(212,80,10,0.02) 70%, transparent 100%);
+    border-left: 4px solid #d4500a;
+    border-top: 1px solid rgba(212,80,10,0.18);
+    border-bottom: 1px solid rgba(212,80,10,0.08);
+    border-radius: 0 4px 4px 0;
+}
+.me-section::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212,80,10,0.25), transparent);
+    margin-left: 8px;
 }
 
 /* ── Upload zone ── */
 .me-upload-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
     letter-spacing: 0.15em;
     color: #7a7a90;
     text-transform: uppercase;
@@ -150,13 +206,13 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
 .cvt-card {
     background: #0b0d14;
     border: 1px solid #252530;
-    border-left: 3px solid #e03545;
+    border-left: 3px solid #d4500a;
     padding: 14px 18px;
     border-radius: 4px;
 }
 .cvt-card-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
     color: #6a6a80;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -164,18 +220,18 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
 }
 .cvt-card-value {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    color: #e03545;
+    color: #d4500a;
 }
 .cvt-card-unit {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
     color: #7a7a90;
     margin-left: 4px;
 }
-.cvt-card.run2 { border-left-color: #f97316; }
-.cvt-card.run2 .cvt-card-value { color: #f97316; }
+.cvt-card.run2 { border-left-color: #38bdf8; }
+.cvt-card.run2 .cvt-card-value { color: #38bdf8; }
 
 /* ── Anomaly table ── */
 div[data-testid="stDataFrame"] {
@@ -196,26 +252,26 @@ div[data-testid="stPlotlyChart"] {
 div[data-testid="stDownloadButton"] > button,
 div[data-testid="stButton"] > button {
     font-family: 'Rajdhani', sans-serif !important;
-    font-size: 1rem !important;
+    font-size: 1.05rem !important;
     font-weight: 600 !important;
     letter-spacing: 0.12em !important;
     text-transform: uppercase !important;
     background: transparent !important;
-    color: #e03545 !important;
-    border: 1px solid #e03545 !important;
+    color: #d4500a !important;
+    border: 1px solid #d4500a !important;
     border-radius: 3px !important;
     padding: 0.5rem 1.8rem !important;
     transition: all 0.2s !important;
 }
 div[data-testid="stDownloadButton"] > button:hover,
 div[data-testid="stButton"] > button:hover {
-    background: rgba(224,53,69,0.08) !important;
-    box-shadow: 0 0 16px rgba(224,53,69,0.20) !important;
+    background: rgba(212,80,10,0.09) !important;
+    box-shadow: 0 0 16px rgba(212,80,10,0.20) !important;
 }
 
 /* ── Radio ── */
 div[data-testid="stRadio"] label {
-    font-family: 'Share Tech Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
     color: #7a7a90;
 }
@@ -224,19 +280,55 @@ div[data-testid="stRadio"] label {
 h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
 .stAlert { border-radius: 4px; }
 
+/* ── Force Space Grotesk everywhere Streamlit injects its own font ── */
+div[data-testid="stFileUploader"] *,
+div[data-testid="stFileUploaderDropzoneInstructions"] *,
+div[data-testid="stFileUploaderDropzoneInstructions"],
+div[data-testid="uploadedFile"],
+div[data-testid="uploadedFile"] *,
+div[data-testid="stFileUploader"] small,
+div[data-testid="stFileUploader"] p,
+div[data-testid="stFileUploader"] span:not(button span) {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    color: #6a6a80 !important;
+    letter-spacing: 0.06em !important;
+}
+div[data-testid="stFileUploader"] button span {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.7rem !important;
+    color: #d4500a !important;
+}
+/* Dataframe table font */
+div[data-testid="stDataFrame"] *,
+div[data-testid="stDataFrame"] table,
+div[data-testid="stDataFrame"] th,
+div[data-testid="stDataFrame"] td {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.8rem !important;
+}
+div[data-testid="stDataFrame"] th {
+    font-family: 'Rajdhani', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    color: #d4500a !important;
+}
+
 
 /* ── CVT shimmer ── */
 @keyframes shimmer {
-  0%   { color: #e03545; text-shadow: none; }
-  40%  { color: #ff6070; text-shadow: 0 0 10px rgba(255,80,100,0.7), 0 0 20px rgba(224,53,69,0.4); }
-  60%  { color: #ff7080; text-shadow: 0 0 14px rgba(255,100,120,0.8), 0 0 28px rgba(224,53,69,0.5); }
-  100% { color: #e03545; text-shadow: none; }
+  0%   { color: #d4500a; text-shadow: none; }
+  40%  { color: #ff7a2a; text-shadow: 0 0 10px rgba(255,80,100,0.7), 0 0 20px rgba(212,80,10,0.4); }
+  60%  { color: #ff9044; text-shadow: 0 0 14px rgba(255,100,120,0.8), 0 0 28px rgba(224,53,69,0.5); }
+  100% { color: #d4500a; text-shadow: none; }
 }
-@keyframes shimmer-orange {
-  0%   { color: #f97316; text-shadow: none; }
-  40%  { color: #fba860; text-shadow: 0 0 10px rgba(255,160,60,0.7), 0 0 20px rgba(249,115,22,0.4); }
-  60%  { color: #fdc070; text-shadow: 0 0 14px rgba(255,180,80,0.8), 0 0 28px rgba(249,115,22,0.5); }
-  100% { color: #f97316; text-shadow: none; }
+@keyframes shimmer-teal {
+  0%   { color: #38bdf8; text-shadow: none; }
+  40%  { color: #7dd3fc; text-shadow: 0 0 10px rgba(255,160,60,0.7), 0 0 20px rgba(56,189,248,0.4); }
+  60%  { color: #93dcff; text-shadow: 0 0 14px rgba(120,225,255,0.8), 0 0 28px rgba(56,189,248,0.5); }
+  100% { color: #38bdf8; text-shadow: none; }
 }
 .cvt-card-value {
     cursor: default;
@@ -246,7 +338,7 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
     animation: shimmer 1.1s ease-in-out infinite;
 }
 .cvt-card.run2:hover .cvt-card-value {
-    animation: shimmer-orange 1.1s ease-in-out infinite;
+    animation: shimmer-teal 1.1s ease-in-out infinite;
 }
 
 /* ── Hex grid background pattern ── */
@@ -255,8 +347,8 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
     position: fixed;
     inset: 0;
     background-image:
-        linear-gradient(rgba(224,53,69,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(224,53,69,0.04) 1px, transparent 1px);
+        linear-gradient(rgba(212,80,10,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212,80,10,0.05) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -271,15 +363,17 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
     position: absolute;
     bottom: -1px; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, #e03545 0%, rgba(224,53,69,0.3) 40%, transparent 70%);
+    background: linear-gradient(90deg, #d4500a 0%, rgba(224,53,69,0.3) 40%, transparent 70%);
 }
 
 /* ── Section header glow dot ── */
 .me-section::before {
-    content: "▸";
-    margin-right: 6px;
-    opacity: 0.6;
-    font-size: 0.8em;
+    content: "◆";
+    margin-right: 8px;
+    opacity: 0.5;
+    font-size: 0.55em;
+    vertical-align: middle;
+    letter-spacing: 0;
 }
 
 /* ── CVT card hover lift ── */
@@ -288,30 +382,30 @@ h1, h2, h3 { font-family: 'Rajdhani', sans-serif !important; }
 }
 .cvt-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(224,53,69,0.18);
+    box-shadow: 0 4px 20px rgba(212,80,10,0.18);
 }
 .cvt-card.run2:hover {
-    box-shadow: 0 4px 20px rgba(249,115,22,0.18);
+    box-shadow: 0 4px 20px rgba(56,189,248,0.18);
 }
 
 /* ── Chart container hover glow ── */
 div[data-testid="stPlotlyChart"]:hover {
-    border-color: rgba(224,53,69,0.4) !important;
-    box-shadow: 0 0 18px rgba(224,53,69,0.10);
+    border-color: rgba(212,80,10,0.4) !important;
+    box-shadow: 0 0 18px rgba(212,80,10,0.10);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 /* ── Tab styling ── */
 div[data-testid="stTabs"] button {
-    font-family: 'Share Tech Mono', monospace !important;
-    font-size: 0.75rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.84rem !important;
     letter-spacing: 0.1em !important;
     color: #6a6a80 !important;
     text-transform: uppercase !important;
 }
 div[data-testid="stTabs"] button[aria-selected="true"] {
-    color: #e03545 !important;
-    border-bottom: 2px solid #e03545 !important;
+    color: #d4500a !important;
+    border-bottom: 2px solid #d4500a !important;
 }
 
 /* ── Logo pulse ── */
@@ -320,53 +414,53 @@ div[data-testid="stTabs"] button[aria-selected="true"] {
 }
 @keyframes logoPulse {
     0%, 100% { box-shadow: none; }
-    50%       { box-shadow: 0 0 22px rgba(224,53,69,0.55); }
+    50%       { box-shadow: 0 0 22px rgba(212,80,10,0.55); }
 }
 
 /* ── Dataframe hover row highlight ── */
 div[data-testid="stDataFrame"] tr:hover td {
-    background: rgba(224,53,69,0.06) !important;
+    background: rgba(212,80,10,0.07) !important;
 }
 
 /* ── Compact file uploader ── */
 div[data-testid="stFileUploader"] {
     background: #0b0d14 !important;
-    border: 1px dashed rgba(224,53,69,0.35) !important;
+    border: 1px dashed rgba(212,80,10,0.35) !important;
     border-radius: 6px !important;
     padding: 0 !important;
     transition: border-color 0.2s, background 0.2s !important;
 }
 div[data-testid="stFileUploader"]:hover {
-    border-color: #e03545 !important;
-    background: rgba(224,53,69,0.04) !important;
+    border-color: #d4500a !important;
+    background: rgba(212,80,10,0.05) !important;
 }
 div[data-testid="stFileUploader"] section {
     padding: 8px 14px !important;
     min-height: unset !important;
 }
 div[data-testid="stFileUploader"] button {
-    font-family: 'Share Tech Mono', monospace !important;
-    font-size: 0.7rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.8rem !important;
     letter-spacing: 0.1em !important;
-    padding: 3px 12px !important;
+    padding: 4px 14px !important;
     height: auto !important;
     border-radius: 3px !important;
-    color: #e03545 !important;
-    border-color: #e03545 !important;
+    color: #d4500a !important;
+    border-color: #d4500a !important;
     background: transparent !important;
 }
 div[data-testid="stFileUploaderDropzoneInstructions"] {
-    font-family: 'Share Tech Mono', monospace !important;
-    font-size: 0.68rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
     color: #6a6a80 !important;
 }
 div[data-testid="uploadedFile"] {
-    background: rgba(224,53,69,0.06) !important;
+    background: rgba(212,80,10,0.07) !important;
     border: 1px solid rgba(224,53,69,0.2) !important;
     border-radius: 4px !important;
-    font-family: 'Share Tech Mono', monospace !important;
+    font-family: 'JetBrains Mono', monospace !important;
     font-size: 0.7rem !important;
-    color: #e03545 !important;
+    color: #d4500a !important;
     padding: 4px 10px !important;
 }
 
@@ -385,9 +479,10 @@ div[data-testid="uploadedFile"] {
   <div class="me-logo-mark"><div class="me-logo-inner"></div></div>
   <div class="me-brand">
     <div class="me-brand-name">MechaEagles</div>
-    <div class="me-brand-sub">Post-Run Data Analysis Pipeline &nbsp;·&nbsp; v1.0</div>
+    <div class="me-brand-sub">Post-Run Data Analysis Pipeline</div>
   </div>
 </div>
+<div class="me-streak-canvas"></div>
 <canvas id="me-dotgrid"></canvas>
 <script>
 (function(){
@@ -396,7 +491,7 @@ div[data-testid="uploadedFile"] {
   var ctx=c.getContext("2d");
   var mx=-9999,my=-9999;
   var SPACING=28,DOT_R=1.1,GLOW_R=120;
-  var BASE="rgba(60,60,80,0.45)",HOT="224,53,69";
+  var BASE="rgba(60,60,80,0.45)",HOT="212,80,10";
   function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
   resize();
   window.addEventListener("resize",resize);
@@ -431,7 +526,7 @@ div[data-testid="uploadedFile"] {
 PLOT_LAYOUT = dict(
     paper_bgcolor="#05060a",
     plot_bgcolor="#07090f",
-    font=dict(family="Exo 2, sans-serif", color="#8aaabb", size=11),
+    font=dict(family="Space Grotesk, sans-serif", color="#8aaabb", size=11),
     xaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
     yaxis=dict(gridcolor="#1a2d3d", linecolor="#1a3a4a", tickcolor="#1a3a4a", zeroline=False),
     legend=dict(
@@ -447,8 +542,8 @@ PLOT_LAYOUT = dict(
     title_font=dict(family="Rajdhani, sans-serif", size=14, color="#c8d8e8"),
 )
 
-RUN1_COLOR = "#e03545"
-RUN2_COLOR = "#f97316"
+RUN1_COLOR = "#d4500a"
+RUN2_COLOR = "#38bdf8"
 
 # ── Column config ───────────────────────────────────────────────────────────
 COLUMN_ALIASES = {
@@ -550,15 +645,30 @@ def make_line_plot(df1, df2, col, title, yaxis_title, cvt_idx1=None, cvt_idx2=No
                           annotation_font_color=RUN2_COLOR, annotation_position="bottom right")
     fig.update_layout(**PLOT_LAYOUT, title=title,
                       yaxis_title=yaxis_title, xaxis_title="Time (ms)")
+    n_pts = len(df1)
+    step = max(1, n_pts // 40)
+    frames = []
+    for i in range(step, n_pts + step, step):
+        fd = [go.Scatter(x=df1['time_s'].iloc[:i], y=df1[col].iloc[:i])]
+        if df2 is not None:
+            fd.append(go.Scatter(x=df2['time_s'].iloc[:i], y=df2[col].iloc[:i]))
+        frames.append(go.Frame(data=fd))
+    fig.frames = frames
+    fig.update_layout(updatemenus=[dict(
+        type="buttons", showactive=False, visible=False,
+        buttons=[dict(label="Play", method="animate",
+                      args=[None, dict(frame=dict(duration=16, redraw=False),
+                                       fromcurrent=True,
+                                       transition=dict(duration=0))])])])
     return fig
 
 def make_gforce_plot(df1, df2=None):
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df1['gx'], y=df1['gy'], mode='markers', name='Run 1',
-        marker=dict(color=df1['speed'], colorscale=[[0, '#140a14'], [1, RUN1_COLOR]],
+        marker=dict(color=df1['speed'], colorscale=[[0, '#0e0500'], [1, RUN1_COLOR]],
                     size=5, opacity=0.8,
-                    colorbar=dict(title=dict(text='Speed R1', font=dict(size=10, color='#e03545')),
+                    colorbar=dict(title=dict(text='Speed R1', font=dict(size=10, color='#d4500a')),
                                   thickness=12, len=0.42, y=0.78, yanchor='middle',
                                   x=1.02, tickfont=dict(size=9), outlinewidth=0,
                                   bgcolor='rgba(0,0,0,0)'))
@@ -566,9 +676,9 @@ def make_gforce_plot(df1, df2=None):
     if df2 is not None:
         fig.add_trace(go.Scatter(
             x=df2['gx'], y=df2['gy'], mode='markers', name='Run 2',
-            marker=dict(color=df2['speed'], colorscale=[[0, '#100800'], [1, RUN2_COLOR]],
+            marker=dict(color=df2['speed'], colorscale=[[0, '#001418'], [1, RUN2_COLOR]],
                         size=5, opacity=0.8, symbol='diamond',
-                        colorbar=dict(title=dict(text='Speed R2', font=dict(size=10, color='#f97316')),
+                        colorbar=dict(title=dict(text='Speed R2', font=dict(size=10, color='#38bdf8')),
                                       thickness=12, len=0.42, y=0.28, yanchor='middle',
                                       x=1.02, tickfont=dict(size=9), outlinewidth=0,
                                       bgcolor='rgba(0,0,0,0)'))
@@ -594,50 +704,72 @@ def create_all_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
         "G-Force":     make_gforce_plot(df1, df2),
     }
 
+def _apply_white_bg(fig):
+    """Return a copy of fig with white paper and plot background for PDF export."""
+    import copy
+    fig2 = copy.deepcopy(fig)
+    fig2.update_layout(
+        paper_bgcolor='#ffffff',
+        plot_bgcolor='#f8f8f8',
+        font=dict(color='#1a1a1a'),
+        xaxis=dict(gridcolor='#e0e0e0', linecolor='#cccccc', tickcolor='#cccccc', zeroline=False),
+        yaxis=dict(gridcolor='#e0e0e0', linecolor='#cccccc', tickcolor='#cccccc', zeroline=False),
+        legend=dict(bgcolor='rgba(255,255,255,0.9)', bordercolor='#dddddd', borderwidth=1,
+                    font=dict(color='#1a1a1a')),
+        title_font=dict(color='#1a1a1a'),
+    )
+    return fig2
+
+def create_pdf_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
+    """Same plots as create_all_plots but with white backgrounds for PDF."""
+    plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
+    return {k: _apply_white_bg(v) for k, v in plots.items()}
+
 # ── PDF export ──────────────────────────────────────────────────────────────
 from reportlab.platypus import HRFlowable, KeepTogether
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 import datetime
 
 def _pdf_styles():
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
     base = getSampleStyleSheet()
 
-    dark   = rl_colors.HexColor('#0a0e17')
-    teal   = rl_colors.HexColor('#e03545')
-    light  = rl_colors.HexColor('#c8d8e8')
-    muted  = rl_colors.HexColor('#4a7a8a')
-    panel  = rl_colors.HexColor('#0f1a24')
-    border = rl_colors.HexColor('#1a3a4a')
+    white   = rl_colors.HexColor('#ffffff')
+    orange  = rl_colors.HexColor('#d4500a')
+    orange2 = rl_colors.HexColor('#f5813a')
+    dark    = rl_colors.HexColor('#1a1a1a')
+    muted   = rl_colors.HexColor('#666666')
+    panel   = rl_colors.HexColor('#fdf6f0')
+    border  = rl_colors.HexColor('#e8c4a0')
+    stripe  = rl_colors.HexColor('#fff8f3')
 
     title = ParagraphStyle('METitle',
-        fontName='Helvetica-Bold', fontSize=26, leading=30,
-        textColor=teal, spaceAfter=2, alignment=TA_LEFT,
-        letterSpacing=3)
+        fontName='Helvetica-Bold', fontSize=28, leading=32,
+        textColor=orange, spaceAfter=2, alignment=TA_LEFT,
+        letterSpacing=4)
     subtitle = ParagraphStyle('MESubtitle',
         fontName='Helvetica', fontSize=8, leading=12,
-        textColor=muted, spaceAfter=14, alignment=TA_LEFT,
+        textColor=muted, spaceAfter=16, alignment=TA_LEFT,
         letterSpacing=2)
     section = ParagraphStyle('MESection',
-        fontName='Helvetica-Bold', fontSize=9, leading=14,
-        textColor=teal, spaceBefore=18, spaceAfter=6,
-        alignment=TA_LEFT, letterSpacing=2,
-        borderPadding=(0, 0, 4, 0))
+        fontName='Helvetica-Bold', fontSize=8, leading=12,
+        textColor=orange, spaceBefore=20, spaceAfter=8,
+        alignment=TA_LEFT, letterSpacing=3)
     body = ParagraphStyle('MEBody',
         fontName='Helvetica', fontSize=9, leading=14,
-        textColor=light, spaceAfter=4)
+        textColor=dark, spaceAfter=4)
     meta_key = ParagraphStyle('MEMetaKey',
-        fontName='Helvetica-Bold', fontSize=8,
-        textColor=muted, leading=12)
+        fontName='Helvetica-Bold', fontSize=7,
+        textColor=muted, leading=11)
     meta_val = ParagraphStyle('MEMetaVal',
-        fontName='Helvetica-Bold', fontSize=11,
-        textColor=teal, leading=14)
+        fontName='Helvetica-Bold', fontSize=12,
+        textColor=orange, leading=15)
 
     return dict(title=title, subtitle=subtitle, section=section,
                 body=body, meta_key=meta_key, meta_val=meta_val,
-                dark=dark, teal=teal, light=light, muted=muted,
-                panel=panel, border=border)
+                white=white, orange=orange, orange2=orange2,
+                dark=dark, muted=muted, panel=panel, border=border,
+                stripe=stripe,
+                teal=orange, light=dark)
 
 
 def _divider(color):
@@ -659,6 +791,7 @@ def _meta_table(rows, s):
         ('LEFTPADDING',   (0,0), (-1,-1), 10),
         ('RIGHTPADDING',  (0,0), (-1,-1), 10),
         ('VALIGN',        (0,0), (-1,-1), 'TOP'),
+        ('TEXTCOLOR',     (0,0), (-1,-1), s['dark']),
     ]))
     return t
 
@@ -669,86 +802,106 @@ def _anomaly_table(summary_df, s):
     col_widths = [0.6*inch, 0.9*inch, 1.0*inch, 0.8*inch, 2.7*inch]
 
     header = [Paragraph(c, ParagraphStyle('AH', fontName='Helvetica-Bold',
-              fontSize=8, textColor=s['teal'], leading=12)) for c in col_labels]
+              fontSize=8, textColor=rl_colors.HexColor('#ffffff'), leading=12)) for c in col_labels]
     rows = [header]
     for _, row in summary_df.iterrows():
         style = ParagraphStyle('AC', fontName='Helvetica', fontSize=8,
-                               textColor=s['light'], leading=12)
+                               textColor=s['dark'], leading=12)
         rows.append([Paragraph(str(row.get(k, '')), style) for k in col_keys])
 
     t = Table(rows, colWidths=col_widths, repeatRows=1)
-    stripe = rl_colors.HexColor('#111e2a')
+    stripe = s.get('stripe', rl_colors.HexColor('#fff8f3'))
     t.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0), (-1,0),  s['border']),
-        ('BACKGROUND',    (0,1), (-1,-1), s['panel']),
-        ('ROWBACKGROUNDS',(0,1), (-1,-1), [s['panel'], stripe]),
+        ('BACKGROUND',    (0,0), (-1,0),  s['orange']),
+        ('BACKGROUND',    (0,1), (-1,-1), rl_colors.HexColor('#ffffff')),
+        ('ROWBACKGROUNDS',(0,1), (-1,-1), [rl_colors.HexColor('#ffffff'), stripe]),
         ('BOX',           (0,0), (-1,-1), 0.5,  s['border']),
-        ('LINEBELOW',     (0,0), (-1,0),  0.8,  s['teal']),
+        ('LINEBELOW',     (0,0), (-1,0),  0.8,  s['orange']),
         ('INNERGRID',     (0,1), (-1,-1), 0.25, s['border']),
         ('TOPPADDING',    (0,0), (-1,-1), 5),
         ('BOTTOMPADDING', (0,0), (-1,-1), 5),
         ('LEFTPADDING',   (0,0), (-1,-1), 8),
         ('ALIGN',         (0,0), (-1,-1), 'LEFT'),
         ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('TEXTCOLOR',     (0,1), (-1,-1), s['dark']),
     ]))
     return t
 
 
 class _DarkPageTemplate:
-    """Draws dark bg, sidebar stripe, dot texture, top rule, and footer on every page."""
+    """White background with burnt orange header bar, diagonal streak, and footer."""
     @staticmethod
     def on_page(canvas, doc):
         w, h = letter
         L = 0.75*inch
+        ORANGE = rl_colors.HexColor('#d4500a')
+        ORANGE_LIGHT = rl_colors.HexColor('#f5813a')
+        DARK = rl_colors.HexColor('#1a1a1a')
+        MUTED = rl_colors.HexColor('#999999')
         canvas.saveState()
-        # full dark background
-        canvas.setFillColor(rl_colors.HexColor('#0c0d12'))
+        # white background
+        canvas.setFillColor(rl_colors.HexColor('#ffffff'))
         canvas.rect(0, 0, w, h, fill=1, stroke=0)
-        # subtle dot grid texture
-        canvas.setFillColor(rl_colors.HexColor('#17181f'))
-        spacing = 18
-        for row_y in range(0, int(h)+spacing, spacing):
-            for col_x in range(0, int(w)+spacing, spacing):
-                canvas.circle(col_x, row_y, 0.65, fill=1, stroke=0)
-        # left sidebar accent stripe
-        canvas.setFillColor(rl_colors.HexColor('#e03545'))
-        canvas.rect(0, 28, 3, h-28, fill=1, stroke=0)
-        # top rule
-        canvas.setStrokeColor(rl_colors.HexColor('#e03545'))
+        # top header bar — taller to avoid collision (52px)
+        BAR_H = 52
+        canvas.setFillColor(ORANGE)
+        canvas.rect(0, h-BAR_H, w, BAR_H, fill=1, stroke=0)
+        # diagonal streak accents — parallelograms
+        shear = 14
+        for sx, sw, col in [
+            (w*0.58, 18, '#b03008'),
+            (w*0.64,  7, '#c04010'),
+            (w*0.75, 24, '#b03008'),
+            (w*0.81,  9, '#c04010'),
+        ]:
+            by, bh = h-BAR_H, BAR_H
+            canvas.setFillColor(rl_colors.HexColor(col))
+            path = canvas.beginPath()
+            path.moveTo(sx + shear, by + bh)
+            path.lineTo(sx + sw + shear, by + bh)
+            path.lineTo(sx + sw, by)
+            path.lineTo(sx, by)
+            path.close()
+            canvas.drawPath(path, fill=1, stroke=0)
+        # brand name — top line of header
+        canvas.setFont('Helvetica-Bold', 15)
+        canvas.setFillColor(rl_colors.HexColor('#ffffff'))
+        canvas.drawString(L, h - 22, 'MECHAEAGLES')
+        # subtitle — second line, well below brand name
+        canvas.setFont('Helvetica', 8)
+        canvas.setFillColor(rl_colors.HexColor('#ffe0c8'))
+        canvas.drawString(L, h - 38, 'POST-RUN DATA ANALYSIS PIPELINE')
+        # thin rule below header
+        canvas.setStrokeColor(ORANGE_LIGHT)
         canvas.setLineWidth(0.5)
-        canvas.line(L, h-26, w-L, h-26)
-        # running header on pages after page 1
-        if doc.page > 1:
-            canvas.setFont('Helvetica-Bold', 7)
-            canvas.setFillColor(rl_colors.HexColor('#e03545'))
-            canvas.drawString(L, h-18, 'MECHAEAGLES')
-            canvas.setFont('Helvetica', 7)
-            canvas.setFillColor(rl_colors.HexColor('#5a5a70'))
-            canvas.drawString(L+56, h-18, 'POST-RUN DATA ANALYSIS PIPELINE')
+        canvas.line(0, h-BAR_H-2, w, h-BAR_H-2)
+        # left accent stripe
+        canvas.setFillColor(ORANGE)
+        canvas.rect(0, 32, 2, h - BAR_H - 32, fill=1, stroke=0)
         # footer bar
-        canvas.setFillColor(rl_colors.HexColor('#12131a'))
-        canvas.rect(0, 0, w, 28, fill=1, stroke=0)
-        canvas.setStrokeColor(rl_colors.HexColor('#252535'))
+        canvas.setFillColor(rl_colors.HexColor('#f7ede4'))
+        canvas.rect(0, 0, w, 32, fill=1, stroke=0)
+        canvas.setStrokeColor(ORANGE)
         canvas.setLineWidth(0.5)
-        canvas.line(0, 28, w, 28)
+        canvas.line(0, 32, w, 32)
         canvas.setFont('Helvetica', 7)
-        canvas.setFillColor(rl_colors.HexColor('#5a5a70'))
-        canvas.drawString(L, 10, 'MECHAEAGLES  ·  POST-RUN DATA ANALYSIS PIPELINE')
-        canvas.setFillColor(rl_colors.HexColor('#e03545'))
-        canvas.drawRightString(w-L, 10, f'PAGE {doc.page}')
+        canvas.setFillColor(MUTED)
+        canvas.drawString(L, 12, 'MECHAEAGLES  ·  POST-RUN DATA ANALYSIS PIPELINE')
+        canvas.setFillColor(ORANGE)
+        canvas.drawRightString(w-L, 12, f'PAGE {doc.page}')
         canvas.restoreState()
 
 
 @st.cache_data(show_spinner="Generating PDF report...")
 def build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, summary_df):
-    plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
+    plots = create_pdf_plots(df1, cvt_idx1, df2, cvt_idx2)
     s = _pdf_styles()
     buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(
         buffer, pagesize=letter,
         leftMargin=0.75*inch, rightMargin=0.75*inch,
-        topMargin=0.6*inch, bottomMargin=0.55*inch,
+        topMargin=0.9*inch, bottomMargin=0.7*inch,
     )
 
     two_runs = df2 is not None
@@ -811,13 +964,13 @@ def build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, summary_df):
 
     # ── Plots ─────────────────────────────────────────────────────────────────
     elements.append(Spacer(1, 10))
-    elements.append(_divider(s['teal']))
+    elements.append(_divider(s['orange']))
     elements.append(Paragraph('TELEMETRY PLOTS', s['section']))
     elements.append(Spacer(1, 6))
 
     plot_label_style = ParagraphStyle(
         'PlotLabel', fontName='Helvetica-Bold', fontSize=7,
-        textColor=s['teal'], leading=10, letterSpacing=2.0,
+        textColor=s['orange'], leading=10, letterSpacing=2.0,
         spaceAfter=3, spaceBefore=16)
     plot_caption_style = ParagraphStyle(
         'PlotCaption', fontName='Helvetica', fontSize=7,
@@ -932,13 +1085,86 @@ def main():
         else:
             pdf_summary = summary1.copy()
 
-        st.markdown("**Flagged Events**", help="Grouped anomalies detected across all channels")
-        st.dataframe(
-            pdf_summary,
-            use_container_width=True,
-            height=420,
-            hide_index=True,
-        )
+        st.markdown('''
+<style>
+.me-anomaly-wrap { margin-top: 4px; }
+.me-anomaly-table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+}
+.me-anomaly-table thead tr {
+    background: rgba(212,80,10,0.15);
+    border-bottom: 1px solid #d4500a;
+}
+.me-anomaly-table thead th {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #d4500a;
+    padding: 7px 10px;
+    text-align: left;
+    white-space: nowrap;
+}
+.me-anomaly-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+}
+.me-anomaly-table tbody tr:hover {
+    background: rgba(212,80,10,0.07);
+}
+.me-anomaly-table tbody td {
+    padding: 8px 10px;
+    color: #c8d8e8;
+    vertical-align: middle;
+}
+.me-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.me-badge-rpm  { background: rgba(212,80,10,0.2);  color: #ff7a2a; border: 1px solid rgba(212,80,10,0.4); }
+.me-badge-temp { background: rgba(248,56,56,0.15); color: #f87171; border: 1px solid rgba(248,56,56,0.35); }
+.me-badge-g    { background: rgba(56,189,248,0.12);color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+.me-badge-r1   { background: rgba(212,80,10,0.12); color: #d4500a; border: 1px solid rgba(212,80,10,0.3); font-size:0.58rem; }
+.me-badge-r2   { background: rgba(56,189,248,0.10);color: #38bdf8; border: 1px solid rgba(56,189,248,0.25); font-size:0.58rem; }
+</style>
+''', unsafe_allow_html=True)
+
+        if not pdf_summary.empty:
+            rows_html = ""
+            for _, row in pdf_summary.iterrows():
+                atype = str(row.get('type', ''))
+                if 'rpm' in atype:
+                    badge = '<span class="me-badge me-badge-rpm">RPM Drop</span>'
+                elif 'temp' in atype:
+                    badge = '<span class="me-badge me-badge-temp">Temp Spike</span>'
+                else:
+                    badge = '<span class="me-badge me-badge-g">Max-G</span>'
+                run_val = str(row.get('run', ''))
+                run_badge = '<span class="me-badge me-badge-r1">R1</span>' if '1' in run_val else '<span class="me-badge me-badge-r2">R2</span>'
+                rows_html += f"""<tr>
+                    <td>{run_badge}</td>
+                    <td>{row.get('time_s', ''):.0f}</td>
+                    <td>{badge}</td>
+                    <td>{row.get('value', '')}</td>
+                    <td style="color:#6a6a80;font-size:0.62rem">{row.get('threshold', '')}</td>
+                </tr>"""
+            st.markdown(f'''<div class="me-anomaly-wrap">
+<table class="me-anomaly-table">
+<thead><tr>
+  <th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th>
+</tr></thead>
+<tbody>{rows_html}</tbody>
+</table></div>''', unsafe_allow_html=True)
+        else:
+            st.markdown('<p style="color:#6a6a80;font-family:JetBrains Mono,monospace;font-size:0.72rem;margin-top:8px">No anomalies detected.</p>', unsafe_allow_html=True)
 
     with right_col:
         plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
@@ -946,6 +1172,27 @@ def main():
         for tab, key in zip(tabs, ["Speed", "RPM", "Temperature", "Voltage", "G-Force"]):
             with tab:
                 st.plotly_chart(plots[key], use_container_width=True)
+
+    # Auto-play animation when a tab is selected
+    st.markdown(
+        '<script>'
+        '(function(){'
+        'function go(){'
+        '  document.querySelectorAll(".js-plotly-plot").forEach(function(d){'
+        '    if(d._me_played)return;'
+        '    if(!d._transitionData||!d._transitionData._frames||!d._transitionData._frames.length)return;'
+        '    d._me_played=true;'
+        '    Plotly.animate(d,null,{frame:{duration:16,redraw:false},fromcurrent:true,transition:{duration:0}});'
+        '  });'
+        '}'
+        'document.addEventListener("click",function(e){'
+        '  if(e.target.closest("button[role=tab]")){d3.timer(go,150);}'
+        '});'
+        'setTimeout(go,900);'
+        '})();'
+        '</script>',
+        unsafe_allow_html=True
+    )
 
     # ── PDF Export ──────────────────────────────────────────────────────────
     st.markdown('<div class="me-section">Export</div>', unsafe_allow_html=True)
