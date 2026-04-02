@@ -9,6 +9,6 @@ by Calvin Wang | @Yuuklo | wangcalv@bc.edu
 This repository contains the following folders:
 
 - `data` : dummy data for experimental purposes
-- `assets` : logos/PNGs
+- `demos` : graphs/report examples
 ---
 Libraries: `pandas`, `plotly`, `streamlit`, `reportLab`, `numpy`
