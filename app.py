@@ -70,45 +70,7 @@ body::after {
     50%       { opacity: 1;   transform: scale(1.15); }
 }
 
-/* ── Diagonal red streak lines ── */
-.me-streak-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 2;
-    overflow: hidden;
-}
-.me-streak-canvas::before,
-.me-streak-canvas::after {
-    content: "";
-    position: absolute;
-    background: linear-gradient(
-        135deg,
-        transparent 0%,
-        rgba(180,30,10,0.07) 40%,
-        rgba(212,80,10,0.12) 50%,
-        rgba(180,30,10,0.07) 60%,
-        transparent 100%
-    );
-    pointer-events: none;
-}
-.me-streak-canvas::before {
-    width: 2px; height: 140%;
-    top: -20%; left: 18%;
-    transform: rotate(15deg);
-    animation: streakFade 8s ease-in-out infinite;
-}
-.me-streak-canvas::after {
-    width: 1px; height: 140%;
-    top: -20%; left: 72%;
-    transform: rotate(15deg);
-    animation: streakFade 8s ease-in-out infinite 3s;
-}
-@keyframes streakFade {
-    0%,100% { opacity: 0.4; }
-    50%      { opacity: 1; }
-}
+/* streak canvas removed */
 
 /* Remove Streamlit top gap, full-width, no side padding cap */
 .main .block-container {
@@ -129,13 +91,13 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
     margin-bottom: 1.8rem;
     background: linear-gradient(90deg, rgba(212,80,10,0.06) 0%, transparent 60%);
 }
-/* logo is now an inline img — pulse applied via header img selector */
+/* logo — subtle static shadow */
 .me-header img {
-    animation: logoPulse 4s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px rgba(212,80,10,0.25));
     transition: filter 0.3s;
 }
 .me-header img:hover {
-    filter: drop-shadow(0 0 14px rgba(212,80,10,0.8)) !important;
+    filter: drop-shadow(0 0 9px rgba(212,80,10,0.45));
 }
 .me-brand { line-height: 1.15; }
 .me-brand-name {
@@ -393,24 +355,47 @@ div[data-testid="stPlotlyChart"]:hover {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* ── Tab styling ── */
+/* ── Tab styling — sliding bar only ── */
+div[data-testid="stTabs"] [role="tablist"] {
+    border-bottom: 1px solid rgba(212,80,10,0.18) !important;
+    gap: 0 !important;
+}
 div[data-testid="stTabs"] button {
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.84rem !important;
+    font-size: 0.78rem !important;
     letter-spacing: 0.1em !important;
-    color: #6a6a80 !important;
     text-transform: uppercase !important;
+    color: rgba(106,106,128,0.55) !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    background: transparent !important;
+    padding: 8px 16px !important;
+    transition: color 0.25s, border-color 0.25s !important;
+    position: relative !important;
+}
+div[data-testid="stTabs"] button:hover {
+    color: #d4500a !important;
 }
 div[data-testid="stTabs"] button[aria-selected="true"] {
     color: #d4500a !important;
     border-bottom: 2px solid #d4500a !important;
 }
-
-/* ── Logo pulse ── */
-@keyframes logoPulse {
-    0%, 100% { filter: drop-shadow(0 0 4px rgba(212,80,10,0.35)); }
-    50%       { filter: drop-shadow(0 0 14px rgba(212,80,10,0.75)); }
+/* Slide the active indicator with a smooth transition */
+div[data-testid="stTabs"] button::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: -1px; left: 0; right: 0 !important;
+    height: 2px !important;
+    background: #d4500a !important;
+    transform: scaleX(0) !important;
+    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1) !important;
+    transform-origin: left !important;
 }
+div[data-testid="stTabs"] button[aria-selected="true"]::after {
+    transform: scaleX(1) !important;
+}
+
+/* logo pulse removed */
 
 /* ── Dataframe hover row highlight ── */
 div[data-testid="stDataFrame"] tr:hover td {
@@ -690,6 +675,83 @@ def make_gforce_plot(df1, df2=None):
     )
     return fig
 
+
+# ── Anomaly table CSS (injected into page when data is loaded) ──────────────
+ANOMALY_CSS = (
+    '<style>\n'
+    '@keyframes slideInLeft {\n'
+    '    from { opacity: 0; transform: translateX(-60px); }\n'
+    '    to   { opacity: 1; transform: translateX(0); }\n'
+    '}\n'
+    '.me-anomaly-panel {\n'
+    '    animation: slideInLeft 0.75s cubic-bezier(0.22,1,0.36,1) both;\n'
+    '}\n'
+    '.me-anomaly-wrap { margin-top: 4px; }\n'
+    '.me-anomaly-table {\n'
+    '    width: 100%; border-collapse: collapse;\n'
+    "    font-family: 'JetBrains Mono', monospace;\n"
+    '    font-size: 0.78rem;\n'
+    '}\n'
+    '.me-anomaly-table thead tr {\n'
+    '    background: rgba(212,80,10,0.15);\n'
+    '    border-bottom: 1px solid #d4500a;\n'
+    '}\n'
+    '.me-anomaly-table thead th {\n'
+    "    font-family: 'Space Grotesk', sans-serif;\n"
+    '    font-size: 0.72rem; font-weight: 600;\n'
+    '    letter-spacing: 0.12em; text-transform: uppercase;\n'
+    '    color: #d4500a; padding: 7px 10px;\n'
+    '    text-align: left; white-space: nowrap;\n'
+    '}\n'
+    '.me-anomaly-table tbody tr {\n'
+    '    border-bottom: 1px solid rgba(255,255,255,0.04);\n'
+    '    transition: background 0.15s;\n'
+    '}\n'
+    '.me-anomaly-table tbody tr:hover { background: rgba(212,80,10,0.07); }\n'
+    '.me-anomaly-table tbody td {\n'
+    '    padding: 8px 10px; color: #c8d8e8; vertical-align: middle;\n'
+    '}\n'
+    '.me-badge {\n'
+    '    display: inline-block; font-size: 0.72rem; font-weight: 600;\n'
+    '    letter-spacing: 0.06em; text-transform: uppercase;\n'
+    '    padding: 0; background: none; border: none;\n'
+    '}\n'
+    '.me-badge-rpm  { color: #ff7a2a; }\n'
+    '.me-badge-temp { color: #f87171; }\n'
+    '.me-badge-g    { color: #38bdf8; }\n'
+    '.me-badge-r1   { color: #d4500a; font-size: 0.72rem; }\n'
+    '.me-badge-r2   { color: #38bdf8; font-size: 0.72rem; }\n'
+    '</style>\n'
+)
+
+def build_anomaly_table_html(pdf_summary):
+    rows = []
+    for _, row in pdf_summary.iterrows():
+        atype = str(row.get('type', ''))
+        if 'rpm' in atype:
+            badge = '<span class="me-badge me-badge-rpm">RPM Drop</span>'
+        elif 'temp' in atype:
+            badge = '<span class="me-badge me-badge-temp">Temp Spike</span>'
+        else:
+            badge = '<span class="me-badge me-badge-g">Max-G</span>'
+        run_val = str(row.get('run', ''))
+        rb = '<span class="me-badge me-badge-r1">R1</span>' if '1' in run_val else '<span class="me-badge me-badge-r2">R2</span>'
+        ts = row.get('time_s', 0)
+        val = row.get('value', '')
+        thr = row.get('threshold', '')
+        rows.append(
+            f'<tr><td>{rb}</td><td>{ts:.0f}</td><td>{badge}</td>'
+            f'<td>{val}</td><td style="color:#6a6a80;font-size:0.62rem">{thr}</td></tr>'
+        )
+    body = '\n'.join(rows)
+    return (
+        '<div class="me-anomaly-panel me-anomaly-wrap">'
+        '<table class="me-anomaly-table">'
+        '<thead><tr><th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th></tr></thead>'
+        f'<tbody>{body}</tbody></table></div>'
+    )
+
+
 def create_all_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
     return {
         "Speed":       make_line_plot(df1, df2, 'speed',   'Speed vs Time',       'Speed (mph)',    cvt_idx1, cvt_idx2),
@@ -964,12 +1026,12 @@ def build_pdf_report(df1, cvt_idx1, df2, cvt_idx2, summary_df):
     elements.append(Spacer(1, 6))
 
     plot_label_style = ParagraphStyle(
-        'PlotLabel', fontName='Helvetica-Bold', fontSize=7,
-        textColor=s['orange'], leading=10, letterSpacing=2.0,
-        spaceAfter=3, spaceBefore=16)
+        'PlotLabel', fontName='Helvetica-Bold', fontSize=10,
+        textColor=s['orange'], leading=14, letterSpacing=1.5,
+        spaceAfter=4, spaceBefore=18)
     plot_caption_style = ParagraphStyle(
-        'PlotCaption', fontName='Helvetica', fontSize=7,
-        textColor=s['muted'], leading=10, spaceAfter=6)
+        'PlotCaption', fontName='Helvetica', fontSize=9,
+        textColor=s['muted'], leading=13, spaceAfter=6)
 
     plot_descriptions = {
         'Speed':       'Vehicle speed over run duration. CVT engagement point marked as dashed vertical line.',
@@ -1001,27 +1063,64 @@ def main():
     # ── Upload section ──────────────────────────────────────────────────────
     st.markdown('<div class="me-section">Data Input</div>', unsafe_allow_html=True)
 
+    # Track whether run1 was already loaded on last render
+    had_run1_before = st.session_state.get("had_run1", False)
+
     col_u1, col_u2 = st.columns(2)
     with col_u1:
         st.markdown('<div class="me-upload-label">Run 1 — required</div>', unsafe_allow_html=True)
         f1 = st.file_uploader("Run 1", type=["csv"], key="file1", label_visibility="collapsed")
-    with col_u2:
-        st.markdown('<div class="me-upload-label">Run 2 — optional (enables comparison mode)</div>', unsafe_allow_html=True)
-        f2 = st.file_uploader("Run 2", type=["csv"], key="file2", label_visibility="collapsed")
 
-    # Load data
+    # Run 2 uploader: visually dimmed until Run 1 is present
+    run2_disabled = f1 is None
+    with col_u2:
+        st.markdown(
+            '<div class="me-upload-label" style="opacity:{op}">Run 2 — optional (enables comparison mode)</div>'.format(
+                op="0.35" if run2_disabled else "1"
+            ),
+            unsafe_allow_html=True
+        )
+        if run2_disabled:
+            # Render a dimmed placeholder instead of a real uploader
+            st.markdown(
+                '<div style="border:1px dashed rgba(212,80,10,0.12);border-radius:6px;'
+                'padding:8px 14px;background:rgba(212,80,10,0.02);opacity:0.35;'
+                'font-family:JetBrains Mono,monospace;font-size:0.78rem;color:#4a4a5a;">'
+                'Add Run 1 first</div>',
+                unsafe_allow_html=True
+            )
+            f2 = None
+        else:
+            f2 = st.file_uploader("Run 2", type=["csv"], key="file2", label_visibility="collapsed")
+
+    # Load data — only proceed if at least one CSV is uploaded
     df1, df2 = None, None
     if f1:
         df1 = pd.read_csv(f1)
-    else:
-        try:
-            df1 = pd.read_csv('./data/run_001_dummy.csv')
-        except FileNotFoundError:
-            st.error("No CSV uploaded and no dummy file found at ./data/run_001_dummy.csv")
-            return
-
     if f2:
         df2 = pd.read_csv(f2)
+
+    # If Run1 is gone but Run2 is present, promote Run2 → Run1
+    if df1 is None and df2 is not None:
+        df1, df2 = df2, None
+        # Clear file2 state so it doesn't ghost
+        if "file2" in st.session_state:
+            del st.session_state["file2"]
+
+    # If no CSV uploaded, show a prompt and stop
+    if df1 is None:
+        st.session_state["had_run1"] = False
+        st.markdown(
+            '<div id="me-empty-prompt" style="text-align:center;padding:4rem 2rem;color:#4a4a5a;'
+            'font-family:JetBrains Mono,monospace;font-size:0.85rem;letter-spacing:0.1em;">'
+            'Upload a CSV file above to begin analysis.</div>',
+            unsafe_allow_html=True
+        )
+        return
+
+    # Track whether we just got run1 for the first time (scroll trigger)
+    just_got_run1 = not had_run1_before
+    st.session_state["had_run1"] = True
 
     df1 = enforce_dtypes(normalize_columns(df1))
     if df2 is not None:
@@ -1030,7 +1129,8 @@ def main():
     two_runs = df2 is not None
 
     # Session state reset on new data
-    current_key = f"{len(df1)}_{df1['time_s'].sum()}" + (f"_{len(df2)}_{df2['time_s'].sum()}" if two_runs else "")
+    current_key = f"{len(df1)}_{df1['time_s'].sum()}" + (
+        f"_{len(df2)}_{df2['time_s'].sum()}" if two_runs else "")
     if st.session_state.get("data_key") != current_key:
         st.session_state["data_key"] = current_key
         st.session_state["pdf_requested"] = False
@@ -1040,134 +1140,86 @@ def main():
     cvt_idx2 = get_cvt_engagement(df2) if two_runs else None
 
     st.markdown('<div class="me-section">CVT Engagement</div>', unsafe_allow_html=True)
-
     cvt_html = '<div class="cvt-grid">'
     if cvt_idx1 is not None and cvt_idx1 in df1.index:
         t1, r1 = df1.loc[cvt_idx1, 'time_s'], df1.loc[cvt_idx1, 'rpm']
-        cvt_html += f'''<div class="cvt-card">
-            <div class="cvt-card-label">Run 1 — Engagement Time</div>
-            <div class="cvt-card-value">{t1:.0f}<span class="cvt-card-unit">ms</span></div>
-        </div>
-        <div class="cvt-card">
-            <div class="cvt-card-label">Run 1 — Engagement RPM</div>
-            <div class="cvt-card-value">{r1:.0f}<span class="cvt-card-unit">rpm</span></div>
-        </div>'''
+        cvt_html += (
+            '<div class="cvt-card">'
+            '<div class="cvt-card-label">Run 1 — Engagement Time</div>'
+            f'<div class="cvt-card-value">{t1:.0f}<span class="cvt-card-unit">ms</span></div></div>'
+            '<div class="cvt-card">'
+            '<div class="cvt-card-label">Run 1 — Engagement RPM</div>'
+            f'<div class="cvt-card-value">{r1:.0f}<span class="cvt-card-unit">rpm</span></div></div>'
+        )
     if two_runs and cvt_idx2 is not None and cvt_idx2 in df2.index:
         t2, r2 = df2.loc[cvt_idx2, 'time_s'], df2.loc[cvt_idx2, 'rpm']
-        cvt_html += f'''<div class="cvt-card run2">
-            <div class="cvt-card-label">Run 2 — Engagement Time</div>
-            <div class="cvt-card-value">{t2:.0f}<span class="cvt-card-unit">ms</span></div>
-        </div>
-        <div class="cvt-card run2">
-            <div class="cvt-card-label">Run 2 — Engagement RPM</div>
-            <div class="cvt-card-value">{r2:.0f}<span class="cvt-card-unit">rpm</span></div>
-        </div>'''
+        cvt_html += (
+            '<div class="cvt-card run2">'
+            '<div class="cvt-card-label">Run 2 — Engagement Time</div>'
+            f'<div class="cvt-card-value">{t2:.0f}<span class="cvt-card-unit">ms</span></div></div>'
+            '<div class="cvt-card run2">'
+            '<div class="cvt-card-label">Run 2 — Engagement RPM</div>'
+            f'<div class="cvt-card-value">{r2:.0f}<span class="cvt-card-unit">rpm</span></div></div>'
+        )
     cvt_html += '</div>'
     st.markdown(cvt_html, unsafe_allow_html=True)
 
-    # ── Anomalies + Plots side by side ──────────────────────────────────────
+    # ── Detect anomalies ────────────────────────────────────────────────────
+    summary1 = detect_anomalies(df1)
+    summary1.insert(0, 'run', 'Run 1')
+    if two_runs:
+        summary2 = detect_anomalies(df2)
+        summary2.insert(0, 'run', 'Run 2')
+        pdf_summary = pd.concat([summary1, summary2], ignore_index=True)
+    else:
+        pdf_summary = summary1.copy()
+
+    has_anomalies = not pdf_summary.empty
+
+    # ── Anomaly CSS (always inject so animation class exists) ────────────────
+    st.markdown(ANOMALY_CSS, unsafe_allow_html=True)
+
+    # ── Section header ───────────────────────────────────────────────────────
     st.markdown('<div class="me-section">Anomalies & Plots</div>', unsafe_allow_html=True)
 
-    left_col, right_col = st.columns([1, 2], gap="medium")
-
-    with left_col:
-        summary1 = detect_anomalies(df1)
-        summary1.insert(0, 'run', 'Run 1')
-        if two_runs:
-            summary2 = detect_anomalies(df2)
-            summary2.insert(0, 'run', 'Run 2')
-            pdf_summary = pd.concat([summary1, summary2], ignore_index=True)
-        else:
-            pdf_summary = summary1.copy()
-
-        st.markdown('''
-<style>
-.me-anomaly-wrap { margin-top: 4px; }
-.me-anomaly-table {
-    width: 100%; border-collapse: collapse;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-}
-.me-anomaly-table thead tr {
-    background: rgba(212,80,10,0.15);
-    border-bottom: 1px solid #d4500a;
-}
-.me-anomaly-table thead th {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #d4500a;
-    padding: 7px 10px;
-    text-align: left;
-    white-space: nowrap;
-}
-.me-anomaly-table tbody tr {
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
-}
-.me-anomaly-table tbody tr:hover {
-    background: rgba(212,80,10,0.07);
-}
-.me-anomaly-table tbody td {
-    padding: 8px 10px;
-    color: #c8d8e8;
-    vertical-align: middle;
-}
-.me-badge {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 0;
-    background: none;
-    border: none;
-}
-.me-badge-rpm  { color: #ff7a2a; }
-.me-badge-temp { color: #f87171; }
-.me-badge-g    { color: #38bdf8; }
-.me-badge-r1   { color: #d4500a; font-size: 0.72rem; }
-.me-badge-r2   { color: #38bdf8; font-size: 0.72rem; }
-</style>
-''', unsafe_allow_html=True)
-
-        if not pdf_summary.empty:
-            rows_html = ""
-            for _, row in pdf_summary.iterrows():
-                atype = str(row.get('type', ''))
-                if 'rpm' in atype:
-                    badge = '<span class="me-badge me-badge-rpm">RPM Drop</span>'
-                elif 'temp' in atype:
-                    badge = '<span class="me-badge me-badge-temp">Temp Spike</span>'
-                else:
-                    badge = '<span class="me-badge me-badge-g">Max-G</span>'
-                run_val = str(row.get('run', ''))
-                run_badge = '<span class="me-badge me-badge-r1">R1</span>' if '1' in run_val else '<span class="me-badge me-badge-r2">R2</span>'
-                rows_html += f"""<tr>
-                    <td>{run_badge}</td>
-                    <td>{row.get('time_s', ''):.0f}</td>
-                    <td>{badge}</td>
-                    <td>{row.get('value', '')}</td>
-                    <td style="color:#6a6a80;font-size:0.62rem">{row.get('threshold', '')}</td>
-                </tr>"""
-            st.markdown(f'''<div class="me-anomaly-wrap">
-<table class="me-anomaly-table">
-<thead><tr>
-  <th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th>
-</tr></thead>
-<tbody>{rows_html}</tbody>
-</table></div>''', unsafe_allow_html=True)
-        else:
-            st.markdown('<p style="color:#6a6a80;font-family:JetBrains Mono,monospace;font-size:0.72rem;margin-top:8px">No anomalies detected.</p>', unsafe_allow_html=True)
-
-    with right_col:
+    if has_anomalies:
+        left_col, right_col = st.columns([1, 2], gap="medium")
+        with left_col:
+            st.markdown(build_anomaly_table_html(pdf_summary), unsafe_allow_html=True)
+        with right_col:
+            plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
+            tabs = st.tabs(["Speed", "RPM", "Temperature", "Voltage", "G-Force"])
+            for tab, key in zip(tabs, ["Speed", "RPM", "Temperature", "Voltage", "G-Force"]):
+                with tab:
+                    st.plotly_chart(plots[key], use_container_width=True)
+    else:
         plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
         tabs = st.tabs(["Speed", "RPM", "Temperature", "Voltage", "G-Force"])
         for tab, key in zip(tabs, ["Speed", "RPM", "Temperature", "Voltage", "G-Force"]):
             with tab:
                 st.plotly_chart(plots[key], use_container_width=True)
+
+    # Scroll to plots section on first upload (inject AFTER content renders)
+    if just_got_run1:
+        st.markdown(
+            '<script>'
+            '(function(){\'use strict\';'
+            'function scrollToPlots(){\''
+            "  var els=document.querySelectorAll('[class*=stTabs],[data-testid=stTabs]');"
+            "  if(els.length){els[0].scrollIntoView({behavior:'smooth',block:'center'});return true;}"
+            "  var secs=document.querySelectorAll('.me-section');"
+            "  if(secs.length){secs[secs.length-1].scrollIntoView({behavior:'smooth',block:'start'});return true;}"
+            '  return false;'
+            '}'
+            'var attempts=0;'
+            'var t=setInterval(function(){'
+            '  attempts++;'
+            '  if(scrollToPlots()||attempts>20)clearInterval(t);'
+            '},150);'
+            '})();'
+            '</script>',
+            unsafe_allow_html=True
+        )
 
     # Auto-play animation when a tab is selected
     st.markdown(
