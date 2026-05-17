@@ -542,6 +542,7 @@ DTYPE_MAP = {
 }
 
 # ── Data functions ──────────────────────────────────────────────────────────
+@st.cache_data
 def normalize_columns(df):
     rename_map = {}
     actual_cols = [c.lower().strip() for c in df.columns]
@@ -556,6 +557,7 @@ def normalize_columns(df):
         raise ValueError(f"Could not find columns: {missing}")
     return df.rename(columns=rename_map)
 
+@st.cache_data
 def enforce_dtypes(df):
     for col, dtype in DTYPE_MAP.items():
         if col in df.columns:
@@ -580,6 +582,7 @@ def group_events(df_flagged, values, event_type, threshold_str, gap=200):
                        "value": round(values.loc[peak_idx], 3), "threshold": threshold_str})
     return events
 
+@st.cache_data
 def detect_anomalies(df):
     RPM_DROP_THRESHOLD, TEMP_SPIKE_THRESHOLD, MAX_G_THRESHOLD, RPM_WINDOW = 1000, 15, 0.75, 10
     anomalies = []
@@ -596,6 +599,7 @@ def detect_anomalies(df):
         return pd.DataFrame(anomalies).sort_values("time_s").reset_index(drop=True)
     return pd.DataFrame(columns=["time_s", "type", "value", "threshold"])
 
+@st.cache_data
 def get_cvt_engagement(df):
     mask = df['speed'] > 0.5
     return mask.idxmax() if mask.any() else None
@@ -752,6 +756,7 @@ def build_anomaly_table_html(pdf_summary):
     )
 
 
+@st.cache_data
 def create_all_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
     return {
         "Speed":       make_line_plot(df1, df2, 'speed',   'Speed vs Time',       'Speed (mph)',    cvt_idx1, cvt_idx2),
