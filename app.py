@@ -79,7 +79,26 @@ body::after {
     background-color: #05060a;
 }
 #root > div:first-child { margin-top: 0 !important; }
-header[data-testid="stHeader"] { background: transparent; height: 0; }
+header[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+/* Kill every Streamlit wrapper that adds top space */
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] > section,
+[data-testid="stAppViewContainer"] > section.main,
+[data-testid="stAppViewContainer"] > section.main > div,
+[data-testid="stAppViewContainer"] > section.main > div > div,
+.main, .main > div, .block-container,
+section[data-testid="stSidebar"] ~ section,
+div[class*="appview-container"],
+div[class*="main"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
 
 /* ── Header ── */
 .me-header {
