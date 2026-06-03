@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
+import streamlit.components.v1 as _st_components
 import io
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Spacer, Table, TableStyle
@@ -79,26 +80,7 @@ body::after {
     background-color: #05060a;
 }
 #root > div:first-child { margin-top: 0 !important; }
-header[data-testid="stHeader"] {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-/* Kill every Streamlit wrapper that adds top space */
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] > section,
-[data-testid="stAppViewContainer"] > section.main,
-[data-testid="stAppViewContainer"] > section.main > div,
-[data-testid="stAppViewContainer"] > section.main > div > div,
-.main, .main > div, .block-container,
-section[data-testid="stSidebar"] ~ section,
-div[class*="appview-container"],
-div[class*="main"] {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
+header[data-testid="stHeader"] { background: transparent; height: 0; }
 
 /* ── Header ── */
 .me-header {
@@ -561,7 +543,6 @@ DTYPE_MAP = {
 }
 
 # ── Data functions ──────────────────────────────────────────────────────────
-@st.cache_data
 def normalize_columns(df):
     rename_map = {}
     actual_cols = [c.lower().strip() for c in df.columns]
@@ -576,7 +557,6 @@ def normalize_columns(df):
         raise ValueError(f"Could not find columns: {missing}")
     return df.rename(columns=rename_map)
 
-@st.cache_data
 def enforce_dtypes(df):
     for col, dtype in DTYPE_MAP.items():
         if col in df.columns:
@@ -601,7 +581,6 @@ def group_events(df_flagged, values, event_type, threshold_str, gap=200):
                        "value": round(values.loc[peak_idx], 3), "threshold": threshold_str})
     return events
 
-@st.cache_data
 def detect_anomalies(df):
     RPM_DROP_THRESHOLD, TEMP_SPIKE_THRESHOLD, MAX_G_THRESHOLD, RPM_WINDOW = 1000, 15, 0.75, 10
     anomalies = []
@@ -618,7 +597,6 @@ def detect_anomalies(df):
         return pd.DataFrame(anomalies).sort_values("time_s").reset_index(drop=True)
     return pd.DataFrame(columns=["time_s", "type", "value", "threshold"])
 
-@st.cache_data
 def get_cvt_engagement(df):
     mask = df['speed'] > 0.5
     return mask.idxmax() if mask.any() else None
@@ -699,83 +677,153 @@ def make_gforce_plot(df1, df2=None):
     return fig
 
 
-# ── Anomaly table CSS (injected into page when data is loaded) ──────────────
-ANOMALY_CSS = (
-    '<style>\n'
-    '@keyframes slideInLeft {\n'
-    '    from { opacity: 0; transform: translateX(-60px); }\n'
-    '    to   { opacity: 1; transform: translateX(0); }\n'
-    '}\n'
-    '.me-anomaly-panel {\n'
-    '    animation: slideInLeft 0.75s cubic-bezier(0.22,1,0.36,1) both;\n'
-    '}\n'
-    '.me-anomaly-wrap { margin-top: 4px; }\n'
-    '.me-anomaly-table {\n'
-    '    width: 100%; border-collapse: collapse;\n'
-    "    font-family: 'JetBrains Mono', monospace;\n"
-    '    font-size: 0.78rem;\n'
-    '}\n'
-    '.me-anomaly-table thead tr {\n'
-    '    background: rgba(212,80,10,0.15);\n'
-    '    border-bottom: 1px solid #d4500a;\n'
-    '}\n'
-    '.me-anomaly-table thead th {\n'
-    "    font-family: 'Space Grotesk', sans-serif;\n"
-    '    font-size: 0.72rem; font-weight: 600;\n'
-    '    letter-spacing: 0.12em; text-transform: uppercase;\n'
-    '    color: #d4500a; padding: 7px 10px;\n'
-    '    text-align: left; white-space: nowrap;\n'
-    '}\n'
-    '.me-anomaly-table tbody tr {\n'
-    '    border-bottom: 1px solid rgba(255,255,255,0.04);\n'
-    '    transition: background 0.15s;\n'
-    '}\n'
-    '.me-anomaly-table tbody tr:hover { background: rgba(212,80,10,0.07); }\n'
-    '.me-anomaly-table tbody td {\n'
-    '    padding: 8px 10px; color: #c8d8e8; vertical-align: middle;\n'
-    '}\n'
-    '.me-badge {\n'
-    '    display: inline-block; font-size: 0.72rem; font-weight: 600;\n'
-    '    letter-spacing: 0.06em; text-transform: uppercase;\n'
-    '    padding: 0; background: none; border: none;\n'
-    '}\n'
-    '.me-badge-rpm  { color: #ff7a2a; }\n'
-    '.me-badge-temp { color: #f87171; }\n'
-    '.me-badge-g    { color: #38bdf8; }\n'
-    '.me-badge-r1   { color: #d4500a; font-size: 0.72rem; }\n'
-    '.me-badge-r2   { color: #38bdf8; font-size: 0.72rem; }\n'
-    '</style>\n'
-)
+# ANOMALY_CSS moved — now rendered inline via components.v1.html
 
-def build_anomaly_table_html(pdf_summary):
+def build_anomaly_component(pdf_summary, height_px=460):
+    """Return self-contained HTML for st.components.v1.html — handles its own
+    scroll, sticky header, bottom-alignment, and slide-in animation."""
     rows = []
     for _, row in pdf_summary.iterrows():
         atype = str(row.get('type', ''))
         if 'rpm' in atype:
-            badge = '<span class="me-badge me-badge-rpm">RPM Drop</span>'
+            badge = '<span class="badge badge-rpm">RPM Drop</span>'
         elif 'temp' in atype:
-            badge = '<span class="me-badge me-badge-temp">Temp Spike</span>'
+            badge = '<span class="badge badge-temp">Temp Spike</span>'
         else:
-            badge = '<span class="me-badge me-badge-g">Max-G</span>'
+            badge = '<span class="badge badge-g">Max-G</span>'
         run_val = str(row.get('run', ''))
-        rb = '<span class="me-badge me-badge-r1">R1</span>' if '1' in run_val else '<span class="me-badge me-badge-r2">R2</span>'
-        ts = row.get('time_s', 0)
+        rb = '<span class="badge badge-r1">R1</span>' if '1' in run_val else '<span class="badge badge-r2">R2</span>'
+        ts  = row.get('time_s', 0)
         val = row.get('value', '')
         thr = row.get('threshold', '')
         rows.append(
             f'<tr><td>{rb}</td><td>{ts:.0f}</td><td>{badge}</td>'
-            f'<td>{val}</td><td style="color:#6a6a80;font-size:0.62rem">{thr}</td></tr>'
+            f'<td>{val}</td>'
+            f'<td class="thr">{thr}</td></tr>'
         )
     body = '\n'.join(rows)
-    return (
-        '<div class="me-anomaly-panel me-anomaly-wrap">'
-        '<table class="me-anomaly-table">'
-        '<thead><tr><th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th></tr></thead>'
-        f'<tbody>{body}</tbody></table></div>'
-    )
+    num_rows = len(pdf_summary)
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=JetBrains+Mono:wght@400;500&display=swap');
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  html, body {{ height: 100%; background: transparent; overflow: hidden; }}
+
+  @keyframes slideInLeft {{
+    from {{ opacity: 0; transform: translateX(-50px); }}
+    to   {{ opacity: 1; transform: translateX(0); }}
+  }}
+
+  .outer {{
+    /* height set dynamically via postMessage from parent */
+    height: {height_px}px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    animation: slideInLeft 0.75s cubic-bezier(0.22,1,0.36,1) both;
+    transition: height 0.2s ease;
+  }}
+
+  .scroll-wrap {{
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 0 1 auto;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #d4500a rgba(212,80,10,0.08);
+  }}
+  .scroll-wrap::-webkit-scrollbar {{ width: 4px; }}
+  .scroll-wrap::-webkit-scrollbar-track {{ background: rgba(212,80,10,0.06); border-radius: 2px; }}
+  .scroll-wrap::-webkit-scrollbar-thumb {{ background: #d4500a; border-radius: 2px; }}
+
+  table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: #c8d8e8;
+  }}
+  thead tr {{
+    background: rgba(212,80,10,0.18);
+    border-bottom: 1px solid #d4500a;
+  }}
+  thead th {{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #111520;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #d4500a;
+    padding: 7px 8px;
+    text-align: left;
+    white-space: nowrap;
+  }}
+  tbody tr {{
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }}
+  tbody tr:hover {{ background: rgba(212,80,10,0.07); }}
+  tbody td {{ padding: 7px 8px; vertical-align: middle; }}
+  .thr {{ color: #5a5a72; font-size: 0.66rem; }}
+
+  .badge {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }}
+  .badge-rpm  {{ color: #ff7a2a; }}
+  .badge-temp {{ color: #f87171; }}
+  .badge-g    {{ color: #38bdf8; }}
+  .badge-r1   {{ color: #d4500a; }}
+  .badge-r2   {{ color: #38bdf8; }}
+</style>
+</head>
+<body>
+<div class="outer" id="outer">
+  <div class="scroll-wrap" id="sw">
+    <table>
+      <thead>
+        <tr>
+          <th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th>
+        </tr>
+      </thead>
+      <tbody>{body}</tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function() {{
+  var outer = document.getElementById('outer');
+  var sw    = document.getElementById('sw');
+
+  function applyHeight(px) {{
+    outer.style.height = px + 'px';
+    sw.style.maxHeight = px + 'px';
+  }}
+
+  // Listen for axes-height message from parent page observer
+  window.addEventListener('message', function(e) {{
+    if (e.data && e.data.type === 'me_axes_height') {{
+      applyHeight(e.data.height);
+    }}
+  }});
+
+  // Kick parent to measure and send axes height
+  window.parent.postMessage({{ type: 'me_request_axes_height' }}, '*');
+}})();
+</script>
+</body>
+</html>"""
 
 
-@st.cache_data
 def create_all_plots(df1, cvt_idx1, df2=None, cvt_idx2=None):
     return {
         "Speed":       make_line_plot(df1, df2, 'speed',   'Speed vs Time',       'Speed (mph)',    cvt_idx1, cvt_idx2),
@@ -1200,16 +1248,13 @@ def main():
 
     has_anomalies = not pdf_summary.empty
 
-    # ── Anomaly CSS (always inject so animation class exists) ────────────────
-    st.markdown(ANOMALY_CSS, unsafe_allow_html=True)
-
     # ── Section header ───────────────────────────────────────────────────────
     st.markdown('<div class="me-section">Anomalies & Plots</div>', unsafe_allow_html=True)
 
     if has_anomalies:
         left_col, right_col = st.columns([1, 2], gap="medium")
         with left_col:
-            st.markdown(build_anomaly_table_html(pdf_summary), unsafe_allow_html=True)
+            _st_components.html(build_anomaly_component(pdf_summary, height_px=600), height=600, scrolling=False)
         with right_col:
             plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
             tabs = st.tabs(["Speed", "RPM", "Temperature", "Voltage", "G-Force"])
@@ -1223,27 +1268,88 @@ def main():
             with tab:
                 st.plotly_chart(plots[key], use_container_width=True)
 
-    # Scroll to plots section on first upload (inject AFTER content renders)
+    # Scroll viewport to plot section on first CSV upload
     if just_got_run1:
-        st.markdown(
-            '<script>'
-            '(function(){\'use strict\';'
-            'function scrollToPlots(){\''
-            "  var els=document.querySelectorAll('[class*=stTabs],[data-testid=stTabs]');"
-            "  if(els.length){els[0].scrollIntoView({behavior:'smooth',block:'center'});return true;}"
-            "  var secs=document.querySelectorAll('.me-section');"
-            "  if(secs.length){secs[secs.length-1].scrollIntoView({behavior:'smooth',block:'start'});return true;}"
-            '  return false;'
-            '}'
-            'var attempts=0;'
-            'var t=setInterval(function(){'
-            '  attempts++;'
-            '  if(scrollToPlots()||attempts>20)clearInterval(t);'
-            '},150);'
-            '})();'
-            '</script>',
-            unsafe_allow_html=True
+        _st_components.html(
+            """
+            <script>
+            (function() {
+                function scrollToPlots() {
+                    // Walk up from this iframe to the host document
+                    var hostDoc = window.parent.document;
+                    // Target: the stTabs container (plot tabs)
+                    var tabs = hostDoc.querySelectorAll('[data-testid="stTabs"]');
+                    if (tabs.length > 0) {
+                        tabs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return true;
+                    }
+                    // Fallback: last .me-section header
+                    var secs = hostDoc.querySelectorAll('.me-section');
+                    if (secs.length > 0) {
+                        secs[secs.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        return true;
+                    }
+                    return false;
+                }
+                var attempts = 0;
+                var t = setInterval(function() {
+                    attempts++;
+                    if (scrollToPlots() || attempts > 30) clearInterval(t);
+                }, 100);
+            })();
+            </script>
+            """,
+            height=0,
         )
+
+    # Measure tablist-top → axes-bottom and postMessage to anomaly iframe
+    # Must use components.html — st.markdown strips <script> tags entirely
+    _st_components.html(
+        """
+        <script>
+        (function(){
+          var par = window.parent.document;
+
+          function getHeight() {
+            var plots = par.querySelectorAll('.js-plotly-plot');
+            if (!plots.length) return null;
+            var p      = plots[0];
+            var axesEl = p.querySelector('.cartesianlayer') || p.querySelector('.plot');
+            if (!axesEl) return null;
+            // Measure from the top of the plot axes area to the bottom
+            // This aligns the anomaly chart with the graph plot area,
+            // excluding tab headers (Speed, RPM, Temp, etc.)
+            var axesRect = axesEl.getBoundingClientRect();
+            var h = axesRect.bottom - axesRect.top;
+            return h > 60 ? Math.round(h) : null;
+          }
+
+          function broadcast(h) {
+            var iframes = par.querySelectorAll('iframe');
+            iframes.forEach(function(f) {
+              try { f.contentWindow.postMessage({type:'me_axes_height', height:h}, '*'); }
+              catch(e) {}
+            });
+          }
+
+          // Poll until axes are in DOM, then send
+          var tries = 0;
+          var ti = setInterval(function() {
+            var h = getHeight();
+            if (h) { broadcast(h); clearInterval(ti); }
+            if (++tries > 40) clearInterval(ti);
+          }, 100);
+
+          // Re-send on resize
+          window.parent.addEventListener('resize', function() {
+            var h = getHeight();
+            if (h) broadcast(h);
+          });
+        })();
+        </script>
+        """,
+        height=0,
+    )
 
     # Auto-play animation when a tab is selected
     st.markdown(

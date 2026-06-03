@@ -1,6 +1,6 @@
 streamlit
-pandas==2.2.2
-plotly==5.22.0
-reportlab==4.2.0
+pandas
+plotly
+reportlab
 kaleido
-numpy==1.26.4
+numpy
