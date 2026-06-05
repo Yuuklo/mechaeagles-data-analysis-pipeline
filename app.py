@@ -680,8 +680,8 @@ def make_gforce_plot(df1, df2=None):
 # ANOMALY_CSS moved — now rendered inline via components.v1.html
 
 def build_anomaly_component(pdf_summary, height_px=460):
-    """Return self-contained HTML for st.components.v1.html — handles its own
-    scroll, sticky header, bottom-alignment, and slide-in animation."""
+    """Self-contained iframe: measures tablist→axes height directly from
+    parent DOM and sets its own iframe height. Scrolls when rows overflow."""
     rows = []
     for _, row in pdf_summary.iterrows():
         atype = str(row.get('type', ''))
@@ -692,24 +692,23 @@ def build_anomaly_component(pdf_summary, height_px=460):
         else:
             badge = '<span class="badge badge-g">Max-G</span>'
         run_val = str(row.get('run', ''))
-        rb = '<span class="badge badge-r1">R1</span>' if '1' in run_val else '<span class="badge badge-r2">R2</span>'
+        rb  = '<span class="badge badge-r1">R1</span>' if '1' in run_val else '<span class="badge badge-r2">R2</span>'
         ts  = row.get('time_s', 0)
         val = row.get('value', '')
         thr = row.get('threshold', '')
         rows.append(
             f'<tr><td>{rb}</td><td>{ts:.0f}</td><td>{badge}</td>'
-            f'<td>{val}</td>'
-            f'<td class="thr">{thr}</td></tr>'
+            f'<td>{val}</td><td class="thr">{thr}</td></tr>'
         )
     body = '\n'.join(rows)
-    num_rows = len(pdf_summary)
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=JetBrains+Mono:wght@400;500&display=swap');
   *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  html, body {{ height: 100%; background: transparent; overflow: hidden; }}
+  html, body {{ height: 100%; background: transparent; overflow: hidden;
+                display: flex; flex-direction: column; }}
 
   @keyframes slideInLeft {{
     from {{ opacity: 0; transform: translateX(-50px); }}
@@ -717,20 +716,18 @@ def build_anomaly_component(pdf_summary, height_px=460):
   }}
 
   .outer {{
-    /* height set dynamically via postMessage from parent */
-    height: {height_px}px;
+    flex: 1 1 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     animation: slideInLeft 0.75s cubic-bezier(0.22,1,0.36,1) both;
-    transition: height 0.2s ease;
   }}
 
   .scroll-wrap {{
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    flex: 0 1 auto;
-    min-height: 0;
     scrollbar-width: thin;
     scrollbar-color: #d4500a rgba(212,80,10,0.08);
   }}
@@ -739,46 +736,23 @@ def build_anomaly_component(pdf_summary, height_px=460):
   .scroll-wrap::-webkit-scrollbar-thumb {{ background: #d4500a; border-radius: 2px; }}
 
   table {{
-    width: 100%;
-    border-collapse: collapse;
+    width: 100%; border-collapse: collapse;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    color: #c8d8e8;
+    font-size: 0.76rem; color: #c8d8e8;
   }}
-  thead tr {{
-    background: rgba(212,80,10,0.18);
-    border-bottom: 1px solid #d4500a;
-  }}
+  thead tr {{ background: rgba(212,80,10,0.18); border-bottom: 1px solid #d4500a; }}
   thead th {{
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #111520;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #d4500a;
-    padding: 7px 8px;
-    text-align: left;
-    white-space: nowrap;
+    position: sticky; top: 0; z-index: 2; background: #111520;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.68rem;
+    font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #d4500a; padding: 7px 8px; text-align: left; white-space: nowrap;
   }}
-  tbody tr {{
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
-  }}
+  tbody tr {{ border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }}
   tbody tr:hover {{ background: rgba(212,80,10,0.07); }}
   tbody td {{ padding: 7px 8px; vertical-align: middle; }}
-  .thr {{ color: #5a5a72; font-size: 0.66rem; }}
-
-  .badge {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }}
+  .thr {{ color: #5a5a72; font-size: 0.62rem; }}
+  .badge {{ font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+            font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }}
   .badge-rpm  {{ color: #ff7a2a; }}
   .badge-temp {{ color: #f87171; }}
   .badge-g    {{ color: #38bdf8; }}
@@ -787,37 +761,56 @@ def build_anomaly_component(pdf_summary, height_px=460):
 </style>
 </head>
 <body>
-<div class="outer" id="outer">
-  <div class="scroll-wrap" id="sw">
+<div class="outer">
+  <div class="scroll-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Run</th><th>Time&nbsp;(ms)</th><th>Type</th><th>Value</th><th>Threshold</th>
+      </tr></thead>
       <tbody>{body}</tbody>
     </table>
   </div>
 </div>
 <script>
 (function() {{
-  var outer = document.getElementById('outer');
-  var sw    = document.getElementById('sw');
+  var par = window.parent.document;
 
-  function applyHeight(px) {{
-    outer.style.height = px + 'px';
-    sw.style.maxHeight = px + 'px';
+  function measure() {{
+    var tabList = par.querySelector('[role="tablist"]');
+    var plots   = par.querySelectorAll('.js-plotly-plot');
+    if (!tabList || !plots.length) return null;
+    var axesEl  = plots[0].querySelector('.cartesianlayer') || plots[0].querySelector('.plot');
+    if (!axesEl) return null;
+    var h = axesEl.getBoundingClientRect().bottom - tabList.getBoundingClientRect().top;
+    return h > 60 ? Math.round(h) : null;
   }}
 
-  // Listen for axes-height message from parent page observer
-  window.addEventListener('message', function(e) {{
-    if (e.data && e.data.type === 'me_axes_height') {{
-      applyHeight(e.data.height);
+  function applyHeight(h) {{
+    // Resize this very iframe in the parent document
+    var iframes = par.querySelectorAll('iframe');
+    for (var i = 0; i < iframes.length; i++) {{
+      try {{
+        if (iframes[i].contentWindow === window) {{
+          iframes[i].style.height = h + 'px';
+          // Also stretch html+body inside so flex fills
+          document.documentElement.style.height = h + 'px';
+          document.body.style.height             = h + 'px';
+          break;
+        }}
+      }} catch(e) {{}}
     }}
-  }});
+  }}
 
-  // Kick parent to measure and send axes height
-  window.parent.postMessage({{ type: 'me_request_axes_height' }}, '*');
+  var tries = 0;
+  var ti = setInterval(function() {{
+    var h = measure();
+    if (h) {{ applyHeight(h); clearInterval(ti); }}
+    if (++tries > 60) clearInterval(ti);
+  }}, 80);
+
+  window.parent.addEventListener('resize', function() {{
+    var h = measure(); if (h) applyHeight(h);
+  }});
 }})();
 </script>
 </body>
@@ -1254,7 +1247,7 @@ def main():
     if has_anomalies:
         left_col, right_col = st.columns([1, 2], gap="medium")
         with left_col:
-            _st_components.html(build_anomaly_component(pdf_summary, height_px=600), height=600, scrolling=False)
+            _st_components.html(build_anomaly_component(pdf_summary, height_px=460), height=460, scrolling=False)
         with right_col:
             plots = create_all_plots(df1, cvt_idx1, df2, cvt_idx2)
             tabs = st.tabs(["Speed", "RPM", "Temperature", "Voltage", "G-Force"])
@@ -1302,54 +1295,7 @@ def main():
             height=0,
         )
 
-    # Measure tablist-top → axes-bottom and postMessage to anomaly iframe
-    # Must use components.html — st.markdown strips <script> tags entirely
-    _st_components.html(
-        """
-        <script>
-        (function(){
-          var par = window.parent.document;
 
-          function getHeight() {
-            var plots = par.querySelectorAll('.js-plotly-plot');
-            if (!plots.length) return null;
-            var p      = plots[0];
-            var axesEl = p.querySelector('.cartesianlayer') || p.querySelector('.plot');
-            if (!axesEl) return null;
-            // Measure from the top of the plot axes area to the bottom
-            // This aligns the anomaly chart with the graph plot area,
-            // excluding tab headers (Speed, RPM, Temp, etc.)
-            var axesRect = axesEl.getBoundingClientRect();
-            var h = axesRect.bottom - axesRect.top;
-            return h > 60 ? Math.round(h) : null;
-          }
-
-          function broadcast(h) {
-            var iframes = par.querySelectorAll('iframe');
-            iframes.forEach(function(f) {
-              try { f.contentWindow.postMessage({type:'me_axes_height', height:h}, '*'); }
-              catch(e) {}
-            });
-          }
-
-          // Poll until axes are in DOM, then send
-          var tries = 0;
-          var ti = setInterval(function() {
-            var h = getHeight();
-            if (h) { broadcast(h); clearInterval(ti); }
-            if (++tries > 40) clearInterval(ti);
-          }, 100);
-
-          // Re-send on resize
-          window.parent.addEventListener('resize', function() {
-            var h = getHeight();
-            if (h) broadcast(h);
-          });
-        })();
-        </script>
-        """,
-        height=0,
-    )
 
     # Auto-play animation when a tab is selected
     st.markdown(
